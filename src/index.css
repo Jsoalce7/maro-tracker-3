@@ -1,0 +1,321 @@
+@import "tailwindcss";
+
+/* Design System Custom Properties */
+:root {
+  /* Background */
+  --bg-primary: #0F0F0F;
+  --bg-secondary: #141414;
+  --bg-card: #1A1A1A;
+  --bg-card-hover: #242424;
+  --bg-elevated: #1C1C1C;
+
+  /* Macro Colors */
+  --color-protein: #EF4444;
+  --color-fat: #F59E0B;
+  --color-carbs: #10B981;
+  --color-calories: #3B82F6;
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A1A1A1;
+  --text-muted: #6B6B6B;
+
+  /* Borders */
+  --border-subtle: #2A2A2A;
+
+  /* Shadows */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .card {
+    background-color: var(--bg-card);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-elevated {
+    background-color: var(--bg-elevated);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .progress-bar {
+    height: 4px;
+    border-radius: 9999px;
+    background-color: var(--border-subtle);
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .bg-protein {
+    background-color: var(--color-protein);
+  }
+
+  .bg-fat {
+    background-color: var(--color-fat);
+  }
+
+  .bg-carbs {
+    background-color: var(--color-carbs);
+  }
+
+  .bg-calories {
+    background-color: var(--color-calories);
+  }
+
+  .text-protein {
+    color: var(--color-protein);
+  }
+
+  .text-fat {
+    color: var(--color-fat);
+  }
+
+  .text-carbs {
+    color: var(--color-carbs);
+  }
+
+  .text-calories {
+    color: var(--color-calories);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Modal & Mobile Specific Styles */
+
+/* Body scroll lock when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  touch-action: none !important;
+}
+
+/* Modal overlay - prevent background interaction */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+/* Modal container for mobile - DO NOT use 100vh */
+.modal-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 51;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  /* Use dvh for dynamic viewport height on mobile */
+  height: 100dvh;
+  height: 100vh;
+  /* Fallback */
+}
+
+@supports (height: 100dvh) {
+  .modal-container {
+    height: 100dvh;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-container {
+    align-items: center;
+  }
+}
+
+/* Modal content wrapper - aggressive sizing */
+.modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 32rem;
+  background-color: #1A1A1A;
+  border-radius: 24px 24px 0 0;
+  display: flex;
+  flex-direction: column;
+  /* Use 80% of viewport to leave room for keyboard and nav */
+  max-height: 80dvh;
+  max-height: 80vh;
+  /* Fallback */
+  overflow: hidden;
+  /* Add bottom margin to account for browser nav bar */
+  margin-bottom: 80px;
+}
+
+@supports (max-height: 80dvh) {
+  .modal-content {
+    max-height: 80dvh;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    border-radius: 24px;
+    max-height: 85vh;
+    margin-bottom: 0;
+  }
+}
+
+/* Modal scrollable area - THIS is the key fix */
+.modal-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 1rem;
+  /* AGGRESSIVE bottom padding - 120px + safe area */
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  /* Ensure minimum height for scrolling */
+  min-height: 0;
+}
+
+/* Modal sticky footer for buttons - ALWAYS visible */
+.modal-footer {
+  flex: 0 0 auto;
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 20px));
+  background-color: #1A1A1A;
+  border-top: 1px solid #2A2A2A;
+}
+
+/* Safe area utilities */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Mobile touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  .modal-scroll {
+    scroll-behavior: smooth;
+  }
+
+  /* More aggressive bottom padding on mobile */
+  .modal-scroll {
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font-size: 16px !important;
+    /* Prevent iOS zoom on focus */
+  }
+}
+
+/* iPhone notch / home indicator safe area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .modal-content {
+    margin-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 768px) {
+    .modal-content {
+      margin-bottom: 0;
+    }
+  }
+}

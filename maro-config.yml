@@ -1,0 +1,7 @@
+tunnel: d40acca9-8b90-4a38-8bfa-26b1ff182eb2
+credentials-file: /Users/orion-station/.cloudflared/d40acca9-8b90-4a38-8bfa-26b1ff182eb2.json
+
+ingress:
+  - hostname: maro.revisioniai.com
+    service: http://localhost:54331
+  - service: http_status:404

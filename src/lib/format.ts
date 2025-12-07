@@ -6,9 +6,15 @@ export function formatNumber(value: number, maxDecimals: number = 2): string {
     if (value === null || value === undefined || isNaN(value)) return '0';
 
     // Round to max decimals and convert to number to strip trailing zeros
-    const rounded = Math.round(value * Math.pow(10, maxDecimals)) / Math.pow(10, maxDecimals);
+    // Using Number() on toFixed() result is a robust way to strip trailing zeros
+    return Number(value.toFixed(maxDecimals)).toString();
+}
 
-    return rounded.toString();
+/**
+ * Format quantity/serving size (usually 0-1 decimals)
+ */
+export function formatQuantity(value: number): string {
+    return formatNumber(value, 1);
 }
 
 /**

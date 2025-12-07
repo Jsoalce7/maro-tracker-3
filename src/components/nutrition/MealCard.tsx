@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { MealType, FoodEntry } from '../../types';
-import { formatNumber, formatCalories } from '../../lib/format';
+import { formatNumber, formatCalories, formatQuantity } from '../../lib/format';
 
 interface MealCardProps {
     type: MealType;
@@ -150,8 +150,8 @@ export function MealCard({
                                     <div className="flex flex-wrap items-center gap-x-2 text-sm text-[#A1A1A1]">
                                         <span>
                                             {(firstEntry.metric_quantity && firstEntry.metric_unit)
-                                                ? `${firstEntry.metric_quantity} ${firstEntry.metric_unit}`
-                                                : `${formatNumber(servings, 1)} servings • ${Math.round(totalGrams)}g`
+                                                ? `${formatQuantity(firstEntry.metric_quantity)} ${firstEntry.metric_unit}`
+                                                : `${formatQuantity(servings)} servings • ${formatQuantity(totalGrams)}g`
                                             }
                                         </span>
                                         <span className="text-[#444] hidden sm:inline">•</span>

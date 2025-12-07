@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { FoodItem, MealType } from '../../types';
 import { useFood } from '../../hooks/useFood';
 import { useRecipes } from '../../hooks/useRecipes';
+import { formatCalories, formatQuantity } from '../../lib/format';
 
 interface AddFoodModalProps {
     mealType?: MealType;
@@ -13,6 +14,20 @@ interface AddFoodModalProps {
     mode?: 'add' | 'manage';
     initialFoodId?: string;
 }
+
+// Categories should be in this specific order
+const CATEGORY_ORDER = [
+    'Favorites', // Special
+    'My Meals', // Special
+    'Meal',
+    'Snack',
+    'Drink',
+    'Ingredients',
+    'Fruit',
+    'Vegetable',
+    'Fast Food',
+    'Other'
+];
 
 // Only Tabs needed now
 type Tab = 'search'; // We might keep 'recents' hidden or merged? Prompt says "Search tab becomes the primary tab... No need for multiple tabs". 
@@ -44,7 +59,7 @@ const CATEGORIES: Record<string, string[]> = {
     'Other': []
 };
 
-export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps) {
+export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModalProps) {
     const navigate = useNavigate();
     const { searchFoods, recentFoods, favorites, deleteCustomFood, toggleFavorite } = useFood();
     const { recipes, deleteRecipe } = useRecipes();
@@ -66,6 +81,11 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
     const [quantity, setQuantity] = useState('100');
     const [servingUnit, setServingUnit] = useState('g');
 
+    // Multi-Select State
+    const [isMultiSelect, setIsMultiSelect] = useState(false);
+    const [selectedItems, setSelectedItems] = useState<{ food: FoodItem, quantity: number, unit: string }[]>([]);
+    const [showReview, setShowReview] = useState(false);
+
 
     // Search Query
     const { data: searchResults, isLoading: isSearching } = useQuery({
@@ -86,14 +106,61 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
 
     // Handle Food Selection
     const handleSelectFood = (food: FoodItem) => {
+        // If in manage mode, navigate to edit directly or open details? 
+        // "Manage Food open the database in Edit/Manage Mode... Editing foods... Adding new foods... Cleaning up".
+        // If mode === 'manage', clicking should probably open Edit screen or a "Manage Item" view.
+        // Let's assume standard details view but with "Edit" primary action instead of "Add".
+
+        if (isMultiSelect && mode !== 'manage') {
+            // Toggle selection with default serving
+            if (selectedItems.some(i => i.food.id === food.id)) {
+                setSelectedItems(prev => prev.filter(i => i.food.id !== food.id));
+            } else {
+                // Add with default
+                // Add with default
+                setSelectedItems(prev => [...prev, {
+                    food,
+                    quantity: 1,
+                    unit: 'serving'
+                }]);
+            }
+            return;
+        }
+
         setSelectedFood(food);
         if ((food as any).is_recipe) {
             setQuantity('1');
             setServingUnit('serving');
         } else {
-            setQuantity(food.serving_size_g?.toString() || '100');
-            setServingUnit(food.serving_unit || 'g');
+            // Default to 'serving' as per new UI requirement
+            setQuantity('1');
+            setServingUnit('serving');
         }
+    };
+
+    const handleBack = () => {
+        if (selectedFood) {
+            setSelectedFood(null);
+            return;
+        }
+        if (selectedSubCategory) {
+            setSelectedSubCategory(null);
+            return;
+        }
+        if (selectedRestaurant) {
+            setSelectedRestaurant(null);
+            return;
+        }
+        if (searchQuery) {
+            setSearchQuery('');
+            return;
+        }
+        if (selectedCategory) {
+            setSelectedCategory(null);
+            setSearchView('categories');
+            return;
+        }
+        if (onClose) onClose(); // Top level closes
     };
 
     const handleAdd = () => {
@@ -149,8 +216,32 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                 {/* Header */}
                 <div className="shrink-0 p-4 border-b border-[#2A2A2A] bg-[#141414] z-10 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-white font-semibold">{mealType ? `Add to ${mealLabels[mealType]}` : 'Food Database'}</h2>
-                        <button onClick={onClose} className="text-[#6B6B6B] hover:text-white p-1">✕</button>
+                        {/* Back / Title Logic */}
+                        <div className="flex items-center gap-2">
+                            {(selectedCategory || selectedFood || searchQuery) && (
+                                <button onClick={handleBack} className="text-[#6B6B6B] hover:text-white">
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                </button>
+                            )}
+                            <h2 className="text-white font-semibold">
+                                {mealType ? `Add to ${mealLabels[mealType]}` : (mode === 'manage' ? 'Manage Foods' : 'Food Database')}
+                            </h2>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {mode !== 'manage' && (
+                                <button
+                                    onClick={() => {
+                                        setIsMultiSelect(!isMultiSelect);
+                                        setSelectedItems([]);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${isMultiSelect ? 'bg-[#3B82F6] text-white border-[#3B82F6]' : 'bg-[#1A1A1A] text-[#6B6B6B] border-[#2A2A2A]'}`}
+                                >
+                                    Select Multiple
+                                </button>
+                            )}
+                            <button onClick={onClose} className="text-[#6B6B6B] hover:text-white p-1">✕</button>
+                        </div>
                     </div>
 
                     {/* Search Bar */}
@@ -167,6 +258,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                         />
                     </div>
 
+                    {/* Create Buttons (Moved under Search) */}
                     {/* Create Buttons (Moved under Search) */}
                     <div className="grid grid-cols-2 gap-2">
                         <button onClick={() => { onClose(); navigate('/create-food'); }} className="bg-[#2A2A2A] hover:bg-[#333] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-medium transition-colors">
@@ -204,43 +296,53 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                     {activeTab === 'search' && searchView === 'categories' && !selectedCategory && !searchQuery && (
                         <div className="space-y-2">
 
-                            {/* Favorites Chip */}
-                            <button
-                                onClick={() => { setSelectedCategory('Favorites'); setSearchView('results'); }}
-                                className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-red-500">♥</span>
-                                    <span className="font-medium text-white">Favorites</span>
-                                </div>
-                                <span className="text-[#6B6B6B] text-xs">{(favorites || []).length} items</span>
-                            </button>
-
-                            {/* My Meals Chip */}
-                            <button
-                                onClick={() => { setSelectedCategory('My Meals'); setSearchView('results'); }}
-                                className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-blue-500">🍽</span>
-                                    <span className="font-medium text-white">My Meals</span>
-                                </div>
-                                <span className="text-[#6B6B6B] text-xs">{(recipes || []).length} items</span>
-                            </button>
-
-                            {/* All Category Chips */}
-                            {Object.keys(CATEGORIES).map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setSelectedCategory(cat)}
-                                    className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
-                                >
-                                    <span className="font-medium text-white">{cat}</span>
-                                    <span className="text-[#6B6B6B] transform rotate-90">›</span>
-                                </button>
-                            ))}
+                            {/* All Category Chips - In Precise Order */}
+                            {CATEGORY_ORDER.map(cat => {
+                                if (cat === 'Favorites') {
+                                    return (
+                                        <button
+                                            key="fav"
+                                            onClick={() => { setSelectedCategory('Favorites'); setSearchView('results'); }}
+                                            className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-red-500">♥</span>
+                                                <span className="font-medium text-white">Favorites</span>
+                                            </div>
+                                            <span className="text-[#6B6B6B] text-xs">{(favorites || []).length} items</span>
+                                        </button>
+                                    );
+                                }
+                                if (cat === 'My Meals') {
+                                    return (
+                                        <button
+                                            key="meals"
+                                            onClick={() => { setSelectedCategory('My Meals'); setSearchView('results'); }}
+                                            className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-blue-500">🍽</span>
+                                                <span className="font-medium text-white">My Meals</span>
+                                            </div>
+                                            <span className="text-[#6B6B6B] text-xs">{(recipes || []).length} items</span>
+                                        </button>
+                                    );
+                                }
+                                // Standard Categories
+                                return (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                    >
+                                        <span className="font-medium text-white">{cat}</span>
+                                        <span className="text-[#6B6B6B] transform rotate-90">›</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
+
 
                     {/* Brands View (Placeholder) */}
                     {activeTab === 'search' && searchView === 'brands' && (
@@ -250,18 +352,37 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                         </div>
                     )}
 
+                    {/* Recents View */}
+                    {activeTab === 'recents' && (
+                        <div className="space-y-1">
+                            {displayFoods.map(food => (
+                                <button
+                                    key={food.id}
+                                    onClick={() => handleSelectFood(food)}
+                                    className={`w-full text-left p-3 rounded-xl transition-all border ${selectedFood?.id === food.id ? 'bg-[#3B82F6]/10 border-[#3B82F6]' : 'bg-transparent border-transparent hover:bg-[#1A1A1A]'}`}
+                                >
+                                    <div className="font-medium text-white">{food.name}</div>
+                                    <div className="text-xs text-[#6B6B6B]">
+                                        {food.brand ? `${food.brand} • ` : ''}
+                                        {formatCalories(food.calories_per_100g * ((food.serving_size_g || 100) / 100))} kcal
+                                        {food.serving_unit && food.serving_unit !== 'g' && food.serving_unit !== 'serving' && (
+                                            <span className="ml-1 text-[#6B6B6B]/80">
+                                                ({formatQuantity(food.serving_unit === 'oz' ? (food.serving_size_g || 0) / 28.35 : (food.serving_size_g || 0))} {food.serving_unit})
+                                            </span>
+                                        )}
+                                    </div>
+                                </button>
+                            ))}
+                            {displayFoods.length === 0 && <div className="text-center text-[#6B6B6B] py-8">No recent foods</div>}
+                        </div>
+                    )}
+
                     {/* Filtered Results / Search Results */}
                     {(searchView === 'results' || selectedCategory) && (
                         <div className="space-y-4">
-                            {/* Header / Back */}
-                            {selectedCategory && (
-                                <button
-                                    onClick={() => { setSelectedCategory(null); setSelectedSubCategory(null); setSelectedRestaurant(null); setSearchView('categories'); setSearchQuery(''); }}
-                                    className="text-[#6B6B6B] hover:text-white flex items-center gap-1 text-sm mb-2"
-                                >
-                                    ‹ Back to Categories
-                                </button>
-                            )}
+                            {/* Header / Back - Removed local back button in favor of unified top bar back */}
+                            {/* But we might want context specific header? The top bar handles global back. */}
+                            {/* Let's clear the local back button to avoid duplication and confusion */}
 
                             {selectedCategory && <h2 className="text-xl font-bold text-white mb-2">{selectedCategory}</h2>}
 
@@ -364,11 +485,33 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                                                 <button
                                                     key={food.id}
                                                     onClick={() => handleSelectFood(food)}
-                                                    className={`w-full text-left p-3 rounded-xl transition-all border ${selectedFood?.id === food.id ? 'bg-[#3B82F6]/10 border-[#3B82F6]' : 'bg-transparent border-transparent hover:bg-[#1A1A1A]'}`}
+                                                    className={`w-full text-left p-3 rounded-xl transition-all border ${isMultiSelect && selectedItems.some(i => i.food.id === food.id)
+                                                        ? 'bg-[#3B82F6]/20 border-[#3B82F6]'
+                                                        : (selectedFood?.id === food.id ? 'bg-[#3B82F6]/10 border-[#3B82F6]' : 'bg-transparent border-transparent hover:bg-[#1A1A1A]')
+                                                        }`}
                                                 >
-                                                    <div className="font-medium text-white">{food.name}</div>
-                                                    <div className="text-xs text-[#6B6B6B]">
-                                                        {food.brand} • {Math.round(food.calories_per_100g * ((food.serving_size_g || 100) / 100))} kcal
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <div className="font-medium text-white">{food.name}</div>
+                                                            <div className="text-xs text-[#6B6B6B]">
+                                                                {food.brand} • {formatCalories(food.calories_per_100g * ((food.serving_size_g || 100) / 100))} kcal
+                                                                {food.serving_unit && food.serving_unit !== 'g' && food.serving_unit !== 'serving' && (
+                                                                    <span className="ml-1 text-[#6B6B6B]/80">
+                                                                        ({formatQuantity(food.serving_unit === 'oz' ? (food.serving_size_g || 0) / 28.35 : (food.serving_size_g || 0))} {food.serving_unit})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {isMultiSelect && (
+                                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedItems.some(i => i.food.id === food.id) ? 'bg-[#3B82F6] border-[#3B82F6]' : 'border-[#6B6B6B]'
+                                                                }`}>
+                                                                {selectedItems.some(i => i.food.id === food.id) && (
+                                                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </button>
                                             ))}
@@ -390,7 +533,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                                             <div className="font-medium text-white">{food.name}</div>
                                             <div className="text-xs text-[#6B6B6B]">
                                                 {food.restaurant && <span className="text-[#3B82F6] mr-1">{food.restaurant} •</span>}
-                                                {food.brand} • {Math.round(food.calories_per_100g * ((food.serving_size_g || 100) / 100))} kcal
+                                                {food.brand} • {formatCalories(food.calories_per_100g * ((food.serving_size_g || 100) / 100))} kcal
                                             </div>
                                         </button>
                                     ))}
@@ -410,11 +553,45 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                                     type="number"
                                     value={quantity}
                                     onChange={e => setQuantity(e.target.value)}
-                                    className="bg-transparent text-white text-lg w-full focus:outline-none"
+                                    className="bg-transparent text-white text-lg w-full focus:outline-none text-center"
+                                    placeholder="1"
                                 />
                             </div>
-                            <div className="px-3 py-2 text-[#6B6B6B] text-sm font-medium flex items-center">
-                                {servingUnit}
+                            <div className="px-1 border-r border-[#2A2A2A] bg-[#0A0A0A]">
+                                <select
+                                    value={servingUnit}
+                                    onChange={e => setServingUnit(e.target.value)}
+                                    className="bg-transparent text-[#6B6B6B] text-sm font-medium focus:outline-none py-2 pl-2 pr-1 appearance-none cursor-pointer"
+                                >
+                                    <option value="serving">servings</option>
+                                    <option value="g">grams (g)</option>
+                                    {/* Drinks or generic Oz/Ml support */}
+                                    {(selectedFood.category === 'Drink' || ['oz', 'ml', 'fl oz'].includes(selectedFood.serving_unit || '')) && (
+                                        <>
+                                            <option value="oz">oz</option>
+                                            <option value="ml">ml</option>
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+
+                            <div className="px-4 py-3 text-[#6B6B6B] text-sm font-medium flex items-center bg-[#141414] min-w-[80px] justify-center">
+                                = {(() => {
+                                    const qty = parseFloat(quantity) || 0;
+                                    const baseGrams = selectedFood.serving_size_g || 100;
+                                    let totalGrams = 0;
+
+                                    if (servingUnit === 'serving') {
+                                        totalGrams = qty * baseGrams;
+                                    } else if (servingUnit === 'g') {
+                                        totalGrams = qty;
+                                    } else if (servingUnit === 'oz') {
+                                        totalGrams = qty * 28.3495;
+                                    } else if (servingUnit === 'ml') {
+                                        totalGrams = qty; // approx
+                                    }
+                                    return formatQuantity(totalGrams);
+                                })()} g
                             </div>
                         </div>
 
@@ -444,6 +621,131 @@ export function AddFoodModal({ mealType, onClose, onAddFood }: AddFoodModalProps
                                 className="flex-1 bg-[#3B82F6] hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors"
                             >
                                 Add Food
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Multi-Select Floating Action Button or Footer */}
+                {isMultiSelect && selectedItems.length > 0 && !showReview && (
+                    <div className="absolute bottom-20 left-4 right-4 animate-slide-up z-20">
+                        <button
+                            onClick={() => setShowReview(true)}
+                            className="w-full bg-[#3B82F6] text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+                        >
+                            Review {selectedItems.length} Items
+                        </button>
+                    </div>
+                )}
+
+                {/* Review Modal / Screen Overlay */}
+                {showReview && (
+                    <div className="absolute inset-0 z-30 bg-[#141414] flex flex-col animate-slide-up">
+                        <div className="p-4 border-b border-[#2A2A2A] flex items-center justify-between">
+                            <h2 className="text-white font-bold text-lg">Review Selection</h2>
+                            <button onClick={() => setShowReview(false)} className="text-[#6B6B6B]">Close</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                            {selectedItems.map((item, index) => (
+                                <div key={index} className="bg-[#1A1A1A] p-3 rounded-xl border border-[#2A2A2A] flex flex-col gap-2">
+                                    <div className="flex justify-between items-start">
+                                        <div className="font-medium text-white">{item.food.name}</div>
+                                        <button
+                                            onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== index))}
+                                            className="text-[#6B6B6B] hover:text-red-500"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-sm flex-wrap">
+                                        <div className="flex items-center bg-[#0A0A0A] rounded-lg border border-[#2A2A2A] px-1">
+                                            <input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value) || 0;
+                                                    setSelectedItems(prev => {
+                                                        const next = [...prev];
+                                                        next[index] = { ...next[index], quantity: val };
+                                                        return next;
+                                                    });
+                                                }}
+                                                className="bg-transparent w-12 text-center text-white focus:outline-none p-1"
+                                            />
+                                            <select
+                                                value={item.unit}
+                                                onChange={(e) => {
+                                                    const newUnit = e.target.value;
+                                                    setSelectedItems(prev => {
+                                                        const next = [...prev];
+                                                        next[index] = { ...next[index], unit: newUnit };
+                                                        return next;
+                                                    });
+                                                }}
+                                                className="bg-transparent text-[#6B6B6B] text-xs focus:outline-none py-1 pr-1 cursor-pointer"
+                                            >
+                                                <option value="serving">svgs</option>
+                                                <option value="g">g</option>
+                                                {(item.food.category === 'Drink' || ['oz', 'ml', 'fl oz'].includes(item.food.serving_unit || '')) && (
+                                                    <>
+                                                        <option value="oz">oz</option>
+                                                        <option value="ml">ml</option>
+                                                    </>
+                                                )}
+                                            </select>
+                                        </div>
+
+                                        <div className="text-[#6B6B6B]">
+                                            ({(() => {
+                                                const qty = item.quantity;
+                                                const baseGrams = item.food.serving_size_g || 100;
+                                                let totalGrams = 0;
+                                                if (item.unit === 'serving') totalGrams = qty * baseGrams;
+                                                else if (item.unit === 'g') totalGrams = qty;
+                                                else if (item.unit === 'oz') totalGrams = qty * 28.3495;
+                                                else if (item.unit === 'ml') totalGrams = qty;
+                                                return formatQuantity(totalGrams);
+                                            })()} g)
+                                        </div>
+
+                                        <div className="text-white ml-auto font-medium">
+                                            {(() => {
+                                                const qty = item.quantity;
+                                                const baseGrams = item.food.serving_size_g || 100;
+                                                let multiplier = 1;
+
+                                                if (item.unit === 'serving') multiplier = qty;
+                                                else if (item.unit === 'g') multiplier = qty / baseGrams;
+                                                else if (item.unit === 'oz') multiplier = (qty * 28.3495) / baseGrams;
+                                                else if (item.unit === 'ml') multiplier = qty / baseGrams;
+
+                                                return formatCalories(multiplier * (item.food.calories_per_100g || 0) * (baseGrams / 100));
+                                            })()} kcal
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-4 border-t border-[#2A2A2A] bg-[#141414]">
+                            <button
+                                onClick={() => {
+                                    if (onAddFood) {
+                                        selectedItems.forEach(item => {
+                                            onAddFood(
+                                                item.food,
+                                                item.quantity,
+                                                item.unit,
+                                                (item.food as any).is_custom,
+                                                (item.food as any).is_recipe
+                                            );
+                                        });
+                                    }
+                                    onClose();
+                                }}
+                                className="w-full bg-[#3B82F6] hover:bg-blue-600 text-white font-bold py-3.5 rounded-xl transition-colors"
+                            >
+                                Confirm & Log {selectedItems.length} Items
                             </button>
                         </div>
                     </div>

@@ -52,15 +52,28 @@ export function CreateFood() {
     const [showMicros, setShowMicros] = useState(false);
 
     // Initial Load for Edit
+    // Initial Load for Edit
     useEffect(() => {
         if (editFood) {
-            const size = editFood.serving_size_g || 100;
-            const ratio = size / 100; // Factor to convert per-100g TO per-serving
+            const sizeInGrams = editFood.serving_size_g || 100;
+            let displaySize = sizeInGrams;
+            let unit: 'g' | 'oz' | 'ml' = 'g';
+
+            if (editFood.serving_unit === 'oz') {
+                displaySize = sizeInGrams / 28.3495;
+                unit = 'oz';
+            } else if (editFood.serving_unit === 'ml') {
+                unit = 'ml';
+            }
+
+            setServingUnit(unit);
+
+            const ratio = sizeInGrams / 100; // Factor to convert per-100g TO per-serving (based on grams)
 
             setManualForm({
                 name: editFood.name,
                 brand: editFood.brand || '',
-                serving_size_g: size.toString(),
+                serving_size_g: Number(displaySize.toFixed(1)).toString(), // Display standardized value
                 calories: (editFood.calories_per_100g * ratio).toString(),
                 protein: (editFood.protein_per_100g * ratio).toString(),
                 carbs: (editFood.carbs_per_100g * ratio).toString(),
@@ -94,14 +107,14 @@ export function CreateFood() {
         if (food) {
             setManualForm(prev => ({
                 ...prev,
-                name: food.name,
+                name: food.name || '',
                 brand: food.brand || '',
                 ingredient_type: prev.ingredient_type,
                 serving_size_g: (food.serving_size_g || 100).toString(),
-                calories: (food.calories_per_100g * ((food.serving_size_g || 100) / 100)).toString(),
-                protein: (food.protein_per_100g * ((food.serving_size_g || 100) / 100)).toString(),
-                carbs: (food.carbs_per_100g * ((food.serving_size_g || 100) / 100)).toString(),
-                fat: (food.fat_per_100g * ((food.serving_size_g || 100) / 100)).toString(),
+                calories: ((food.calories_per_100g || 0) * ((food.serving_size_g || 100) / 100)).toString(),
+                protein: ((food.protein_per_100g || 0) * ((food.serving_size_g || 100) / 100)).toString(),
+                carbs: ((food.carbs_per_100g || 0) * ((food.serving_size_g || 100) / 100)).toString(),
+                fat: ((food.fat_per_100g || 0) * ((food.serving_size_g || 100) / 100)).toString(),
                 barcode: code,
             }));
             setServingUnit('g'); // Default to g for scanned items usually

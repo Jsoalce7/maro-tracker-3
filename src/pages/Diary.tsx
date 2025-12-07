@@ -28,6 +28,7 @@ export function Diary() {
     const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
     const [showMealSelector, setShowMealSelector] = useState(false);
     const [showWaterModal, setShowWaterModal] = useState(false);
+    const [manageMode, setManageMode] = useState(false);
 
     // Fetch data for selected date
     const { dayLog, addEntry, deleteEntry, updateEntry, isLoading } = useNutrition(selectedDate);
@@ -106,11 +107,24 @@ export function Diary() {
         isCustom?: boolean,
         isRecipe?: boolean
     ) => {
-        // ... (existing implementation)
         if (!selectedMealType || !dayLog) return;
         const meal = dayLog.meals.find(m => m.meal_type === selectedMealType);
         if (!meal) return;
-        const ratio = quantity / 100;
+
+        // Convert quantity to grams/ml for macro calculation
+        // Food nutrition is stored per 100g/ml
+        let quantityInGrams = quantity;
+        if (unit === 'oz') {
+            quantityInGrams = quantity * 28.3495;
+        } else if (unit === 'serving') {
+            // If unit is 'serving', we assume quantity is number of servings
+            // and multiply by the food's defined serving size (g)
+            quantityInGrams = quantity * (food.serving_size_g || 100);
+        }
+
+        // Ratio for per-100g values
+        const ratio = quantityInGrams / 100;
+
         const nutrition = {
             calories: (food.calories_per_100g || 0) * ratio,
             protein: (food.protein_per_100g || 0) * ratio,
@@ -121,31 +135,19 @@ export function Diary() {
         // Determine Caffeine
         const caffeine_mg = (food.caffeine_mg || 0) * ratio;
 
-        // Determine Water Content (Only if explicitly Water)
-        let water_ml = 0;
-        if (food.category === 'Drink') {
-            const isWater =
-                (food.tags && food.tags.includes('Water')) ||
-                food.name.toLowerCase().includes('water') ||
-                food.name.toLowerCase() === 'water';
-
-            if (isWater) {
-                if (unit === 'ml') water_ml = quantity;
-                else if (unit === 'oz') water_ml = quantity * 29.5735;
-                else water_ml = quantity;
-            }
-        }
+        // Water calculation removed as per user request (Drinks should NEVER auto-log water)
+        const water_ml = 0;
 
         addEntry({
             mealId: meal.id,
             foodId: (isCustom || isRecipe) ? undefined : food.id,
             customFoodId: (isCustom && !isRecipe) ? food.id : undefined,
             recipeId: (isRecipe) ? food.id : undefined,
-            quantity: Number(quantity) || 0,
+            quantity: quantityInGrams, // Always store standardized grams/ml in quantity_g
             nutrition,
             caffeine_mg,
             water_ml,
-            metric_quantity: Number(quantity),
+            metric_quantity: Number(quantity), // Store original user input for display
             metric_unit: unit,
         }, {
             onError: (err) => { console.error("Failed to add entry:", err); alert("Failed to add food entry."); },
@@ -305,6 +307,21 @@ export function Diary() {
                         </button>
 
                         <button
+                            onClick={() => {
+                                setShowMealSelector(false);
+                                setManageMode(true);
+                                setShowAddFood(true);
+                            }}
+                            className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-[#6B6B6B]">⚙️</span>
+                                <span className="font-medium text-white">Manage Food</span>
+                            </div>
+                            <span className="text-[#6B6B6B] group-hover:text-white">Open</span>
+                        </button>
+
+                        <button
                             onClick={() => setShowMealSelector(false)}
                             className="w-full py-3 text-[#6B6B6B] hover:text-white font-medium"
                         >
@@ -315,11 +332,12 @@ export function Diary() {
             )}
 
             {/* Add Food Modal */}
-            {showAddFood && selectedMealType && (
+            {showAddFood && (
                 <AddFoodModal
-                    mealType={selectedMealType}
-                    onClose={() => { setShowAddFood(false); setSelectedMealType(null); }}
+                    mealType={selectedMealType || undefined}
+                    onClose={() => { setShowAddFood(false); setSelectedMealType(null); setManageMode(false); }}
                     onAddFood={handleAddFood}
+                    mode={manageMode ? 'manage' : 'add'}
                 />
             )}
 

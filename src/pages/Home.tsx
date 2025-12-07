@@ -18,6 +18,7 @@ export function Home() {
     const [showMealSelector, setShowMealSelector] = useState(false);
     const [showWaterModal, setShowWaterModal] = useState(false);
     const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
+    const [manageMode, setManageMode] = useState(false);
 
     // Data Hooks
     const { targets } = useProfile();
@@ -271,6 +272,21 @@ export function Home() {
                         </button>
 
                         <button
+                            onClick={() => {
+                                setShowMealSelector(false);
+                                setManageMode(true);
+                                openAddFood('snacks'); // Hack to trigger modal - generic type
+                            }}
+                            className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-[#6B6B6B]">⚙️</span>
+                                <span className="font-medium text-white">Manage Food</span>
+                            </div>
+                            <span className="text-[#6B6B6B] group-hover:text-white">Open</span>
+                        </button>
+
+                        <button
                             onClick={() => setShowMealSelector(false)}
                             className="w-full py-3 text-[#6B6B6B] hover:text-white font-medium"
                         >
@@ -281,11 +297,12 @@ export function Home() {
             )}
 
             {/* Add Food Modal */}
-            {showAddFood && selectedMealType && (
+            {showAddFood && (
                 <AddFoodModal
-                    mealType={selectedMealType}
-                    onClose={closeAddFood}
+                    mealType={selectedMealType || undefined}
+                    onClose={() => { closeAddFood(); setManageMode(false); }}
                     onAddFood={handleAddFood}
+                    mode={manageMode ? 'manage' : 'add'}
                 />
             )}
 

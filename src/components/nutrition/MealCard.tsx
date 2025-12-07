@@ -27,7 +27,7 @@ export function MealCard({
     onEditEntry,
     onDeleteEntry
 }: MealCardProps) {
-    const [isExpanded, setIsExpanded] = useState(entries.length > 0);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Group entries by food ID
     const groupedEntries = entries.reduce((acc, entry) => {
@@ -41,32 +41,49 @@ export function MealCard({
 
     const groups = Object.values(groupedEntries);
 
+    // Aggregate Meal Totals
+    const mealTotals = entries.reduce((acc, entry) => ({
+        protein: acc.protein + entry.protein,
+        carbs: acc.carbs + entry.carbs,
+        fat: acc.fat + entry.fat
+    }), { protein: 0, carbs: 0, fat: 0 });
+
+    if (entries.length === 0) {
+        // Show simplified empty state or just standard collapsed state with 0 values
+        // User requested "Collapsed by default". If empty, maybe just show it empty?
+        // Let's stick to the card design even if empty, but values 0.
+    }
+
     return (
-        <Card className="animate-slide-up">
-            {/* Header */}
+        <Card className="animate-slide-up border border-[#2A2A2A] bg-[#141414] overflow-hidden">
+            {/* Header (Collapsed State) */}
             <div
-                className="flex items-center justify-between cursor-pointer"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between cursor-pointer hover:bg-[#1A1A1A] transition-colors gap-2"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
+                {/* Left: Meal Name */}
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#242424] flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#A1A1A1]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 className="text-white font-semibold">{mealLabels[type]}</h3>
-                        <p className="text-xs text-[#6B6B6B]">
-                            {groups.length} {groups.length === 1 ? 'item' : 'items'}
-                        </p>
-                    </div>
+                    <h3 className="text-lg font-bold text-white capitalize">{mealLabels[type]}</h3>
+                    {entries.length === 0 && (
+                        <span className="text-xs text-[#6B6B6B] font-normal">No items</span>
+                    )}
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-[#A1A1A1]">
-                        {totalCalories} kcal
-                    </span>
+
+                {/* Right: Totals */}
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    {entries.length > 0 && (
+                        <div className="flex items-center gap-3 text-sm">
+                            <span className="font-bold text-white">{totalCalories} kcal</span>
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-[#A1A1A1]">
+                                <span className="text-[#EF4444]">{Math.round(mealTotals.protein)}p</span>
+                                <span className="text-[#10B981]">{Math.round(mealTotals.carbs)}c</span>
+                                <span className="text-[#F59E0B]">{Math.round(mealTotals.fat)}f</span>
+                            </div>
+                        </div>
+                    )}
+
                     <svg
-                        className={`w-5 h-5 text-[#6B6B6B] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        className={`w-5 h-5 text-[#6B6B6B] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -76,69 +93,51 @@ export function MealCard({
                 </div>
             </div>
 
-            {/* Expanded content */}
-            {isExpanded && (
-                <div className="mt-4 space-y-3">
-                    {groups.length === 0 ? (
-                        <p className="text-sm text-[#6B6B6B] text-center py-4">
-                            No foods logged yet
-                        </p>
-                    ) : (
-                        <div className="space-y-2">
-                            {groups.map((group) => {
-                                // Aggregate data for the group
-                                const firstEntry = group[0];
-                                const totalCals = group.reduce((sum, e) => sum + e.calories, 0);
-                                const totalGrams = group.reduce((sum, e) => sum + e.quantity_g, 0);
+            {/* Expanded Content */}
+            {isExpanded && entries.length > 0 && (
+                <div className="border-t border-[#2A2A2A]">
+                    {groups.map((group) => {
+                        const firstEntry = group[0];
+                        const totalCals = group.reduce((sum, e) => sum + e.calories, 0);
+                        const totalGrams = group.reduce((sum, e) => sum + e.quantity_g, 0);
 
-                                // Calculate servings: Total Grams / Base Serving Size
-                                const baseServing = firstEntry.food?.serving_size_g || 100;
-                                const servings = totalGrams / baseServing;
+                        // Calculated Macros for the group
+                        const groupMacros = group.reduce((acc, e) => ({
+                            p: acc.p + e.protein,
+                            c: acc.c + e.carbs,
+                            f: acc.f + e.fat
+                        }), { p: 0, c: 0, f: 0 });
 
-                                return (
-                                    <div
-                                        key={firstEntry.id} // Stable-ish key
-                                        className="flex items-center justify-between py-2 px-3 rounded-xl bg-[#141414] group cursor-pointer hover:bg-[#1f1f1f] transition-colors"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onEditEntry) onEditEntry(group);
-                                        }}
-                                    >
-                                        <div className="flex-1">
-                                            <p className="text-sm text-white">
-                                                {firstEntry.recipe ? firstEntry.recipe.name : (firstEntry.food?.name || firstEntry.custom_food?.name || 'Unknown food')}
-                                            </p>
-                                            <p className="text-xs text-[#6B6B6B]">
-                                                {/* Use metric quantity if available, else servings + grams */}
-                                                {(firstEntry.metric_quantity && firstEntry.metric_unit) ? (
-                                                    <span>{firstEntry.metric_quantity} {firstEntry.metric_unit}</span>
-                                                ) : (
-                                                    <>
-                                                        {formatNumber(servings, 1)} servings
-                                                        <span className="text-[#444] mx-1">•</span>
-                                                        {totalGrams}g
-                                                    </>
-                                                )}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="text-right">
-                                                <span className="text-sm font-medium text-[#A1A1A1]">{formatCalories(totalCals)} kcal</span>
-                                                <div className="text-[10px] text-[#555] flex gap-1 justify-end">
-                                                    <span className="text-[#EF4444]">{Math.round(group.reduce((s, e) => s + e.protein, 0))}p</span>
-                                                    <span className="text-[#10B981]">{Math.round(group.reduce((s, e) => s + e.carbs, 0))}c</span>
-                                                    <span className="text-[#F59E0B]">{Math.round(group.reduce((s, e) => s + e.fat, 0))}f</span>
-                                                </div>
-                                            </div>
+                        // Calculate servings
+                        const baseServing = firstEntry.food?.serving_size_g || 100;
+                        const servings = totalGrams / baseServing;
 
-                                            {/* Delete Button (Delete Group) */}
+                        // Display Name
+                        const name = firstEntry.recipe
+                            ? firstEntry.recipe.name
+                            : (firstEntry.food?.name || firstEntry.custom_food?.name || 'Unknown food');
+
+                        return (
+                            <div
+                                key={firstEntry.id}
+                                className="p-4 border-b border-[#2A2A2A] last:border-b-0 hover:bg-[#1A1A1A] cursor-pointer transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onEditEntry) onEditEntry(group);
+                                }}
+                            >
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex justify-between items-start">
+                                        <p className="text-base font-medium text-white">{name}</p>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm font-bold text-white">{formatCalories(totalCals)} kcal</span>
                                             {onDeleteEntry && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onDeleteEntry(group.map(g => g.id));
                                                     }}
-                                                    className="p-1 hover:bg-[#242424] rounded text-[#6B6B6B] hover:text-[#EF4444]"
+                                                    className="text-[#6B6B6B] hover:text-[#EF4444] transition-colors p-1"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -147,10 +146,32 @@ export function MealCard({
                                             )}
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+
+                                    <div className="flex flex-wrap items-center gap-x-2 text-sm text-[#A1A1A1]">
+                                        <span>
+                                            {(firstEntry.metric_quantity && firstEntry.metric_unit)
+                                                ? `${firstEntry.metric_quantity} ${firstEntry.metric_unit}`
+                                                : `${formatNumber(servings, 1)} servings • ${Math.round(totalGrams)}g`
+                                            }
+                                        </span>
+                                        <span className="text-[#444] hidden sm:inline">•</span>
+
+                                        <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                                            <span className="text-[#EF4444]">{Math.round(groupMacros.p)}p</span>
+                                            <span className="text-[#10B981]">{Math.round(groupMacros.c)}c</span>
+                                            <span className="text-[#F59E0B]">{Math.round(groupMacros.f)}f</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+            {/* Empty State in Expanded View */}
+            {isExpanded && entries.length === 0 && (
+                <div className="p-6 text-center text-[#6B6B6B] text-sm border-t border-[#2A2A2A]">
+                    No foods logged for {mealLabels[type]}
                 </div>
             )}
         </Card>

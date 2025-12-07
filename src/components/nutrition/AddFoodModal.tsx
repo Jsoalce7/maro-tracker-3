@@ -208,13 +208,13 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
 
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 lg:p-4" style={{ touchAction: 'none' }}>
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative bg-[#141414] w-full max-w-md h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-[#2A2A2A]">
+            <div className="relative bg-[#141414] w-full h-full max-h-full lg:h-auto lg:max-h-[90vh] lg:max-w-md lg:rounded-2xl flex flex-col overflow-hidden shadow-2xl border-0 lg:border border-[#2A2A2A]">
 
                 {/* Header */}
-                <div className="shrink-0 p-4 border-b border-[#2A2A2A] bg-[#141414] z-10 space-y-4">
+                <div className="shrink-0 p-4 pb-3 modal-header-safe border-b border-[#2A2A2A] bg-[#141414] z-10 space-y-4">
                     <div className="flex items-center justify-between">
                         {/* Back / Title Logic */}
                         <div className="flex items-center gap-2">
@@ -259,12 +259,11 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                     </div>
 
                     {/* Create Buttons (Moved under Search) */}
-                    {/* Create Buttons (Moved under Search) */}
                     <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => { onClose(); navigate('/create-food'); }} className="bg-[#2A2A2A] hover:bg-[#333] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-medium transition-colors">
+                        <button onClick={() => { onClose(); navigate('/create-food'); }} className="bg-[#2A2A2A] hover:bg-[#333] text-white py-3 sm:py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-medium transition-colors min-h-[44px]">
                             <span>+</span> Create Food
                         </button>
-                        <button onClick={() => { onClose(); navigate('/create-recipe'); }} className="bg-[#2A2A2A] hover:bg-[#333] text-white py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-medium transition-colors">
+                        <button onClick={() => { onClose(); navigate('/create-recipe'); }} className="bg-[#2A2A2A] hover:bg-[#333] text-white py-3 sm:py-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-medium transition-colors min-h-[44px]">
                             <span>+</span> Create Meal
                         </button>
                     </div>
@@ -274,14 +273,14 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setSearchView('categories')}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${searchView === 'categories' ? 'bg-[#3B82F6] text-white' : 'bg-[#1A1A1A] text-[#6B6B6B] border border-[#2A2A2A]'}`}
+                                className={`flex-1 py-2.5 sm:py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] sm:min-h-0 ${searchView === 'categories' ? 'bg-[#3B82F6] text-white' : 'bg-[#1A1A1A] text-[#6B6B6B] border border-[#2A2A2A]'}`}
                             >
                                 Categories
                             </button>
                             {/* Hidden Brands for now as per prompt "Brands (A-Z)" just being a placeholder or separate view needed */}
                             <button
                                 onClick={() => setSearchView('brands')}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${searchView === 'brands' ? 'bg-[#3B82F6] text-white' : 'bg-[#1A1A1A] text-[#6B6B6B] border border-[#2A2A2A]'}`}
+                                className={`flex-1 py-2.5 sm:py-1.5 rounded-lg text-xs font-medium transition-colors min-h-[44px] sm:min-h-0 ${searchView === 'brands' ? 'bg-[#3B82F6] text-white' : 'bg-[#1A1A1A] text-[#6B6B6B] border border-[#2A2A2A]'}`}
                             >
                                 Brands
                             </button>
@@ -303,7 +302,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                                         <button
                                             key="fav"
                                             onClick={() => { setSelectedCategory('Favorites'); setSearchView('results'); }}
-                                            className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                            className="w-full flex justify-between items-center p-4 sm:p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors min-h-[56px]"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <span className="text-red-500">♥</span>
@@ -318,7 +317,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                                         <button
                                             key="meals"
                                             onClick={() => { setSelectedCategory('My Meals'); setSearchView('results'); }}
-                                            className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                            className="w-full flex justify-between items-center p-4 sm:p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors min-h-[56px]"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <span className="text-blue-500">🍽</span>
@@ -333,7 +332,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                                     <button
                                         key={cat}
                                         onClick={() => setSelectedCategory(cat)}
-                                        className="w-full flex justify-between items-center p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                        className="w-full flex justify-between items-center p-4 sm:p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors min-h-[56px]"
                                     >
                                         <span className="font-medium text-white">{cat}</span>
                                         <span className="text-[#6B6B6B] transform rotate-90">›</span>
@@ -598,7 +597,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                         <div className="flex gap-3">
                             <button
                                 onClick={handleToggleFavorite}
-                                className={`p-3 rounded-xl bg-[#2A2A2A] hover:text-white transition-colors ${favorites?.some(f => f.id === selectedFood.id) ? 'text-red-500' : 'text-[#6B6B6B]'}`}
+                                className={`p-3 sm:p-2.5 rounded-xl bg-[#2A2A2A] hover:text-white transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center ${favorites?.some(f => f.id === selectedFood.id) ? 'text-red-500' : 'text-[#6B6B6B]'}`}
                             >
                                 <svg className="w-6 h-6" fill={favorites?.some(f => f.id === selectedFood.id) ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                             </button>
@@ -608,7 +607,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                                         onClose();
                                         navigate('/create-food', { state: { editFood: selectedFood } });
                                     }}
-                                    className="p-3 rounded-xl bg-[#2A2A2A] text-[#6B6B6B] hover:text-white transition-colors"
+                                    className="p-3 sm:p-2.5 rounded-xl bg-[#2A2A2A] text-[#6B6B6B] hover:text-white transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
                                     title="Edit Food"
                                 >
                                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -618,7 +617,7 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                             )}
                             <button
                                 onClick={handleAdd}
-                                className="flex-1 bg-[#3B82F6] hover:bg-blue-600 text-white font-semibold py-3 rounded-xl transition-colors"
+                                className="flex-1 bg-[#3B82F6] hover:bg-blue-600 text-white font-semibold py-3.5 sm:py-3 rounded-xl transition-colors min-h-[48px]"
                             >
                                 Add Food
                             </button>
@@ -752,18 +751,20 @@ export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModa
                 )}
 
                 {/* Tabs - Only Search and Recents */}
-                <div className="shrink-0 flex border-t border-[#2A2A2A]">
-                    <button onClick={() => { setActiveTab('search'); setSearchView('categories'); }} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'search' ? 'text-[#3B82F6]' : 'text-[#6B6B6B]'}`}>
-                        <div className="flex flex-col items-center gap-1">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                            Search
-                        </div>
+                <div className="shrink-0 border-t border-[#2A2A2A] bg-[#141414] px-4 pb-safe-mobile grid grid-cols-2 gap-2">
+                    <button onClick={() => { setActiveTab('search'); setSearchView('categories'); }} className={`flex flex-col items-center justify-center py-2.5 sm:py-3 rounded-lg transition-colors ${activeTab === 'search' ? 'text-[#3B82F6] bg-[#1A1A1A]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A]'
+                        }`}>
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <span className="text-xs sm:text-sm font-medium">Search</span>
                     </button>
-                    <button onClick={() => setActiveTab('recents')} className={`flex-1 py-3 text-sm font-medium ${activeTab === 'recents' ? 'text-[#3B82F6]' : 'text-[#6B6B6B]'}`}>
-                        <div className="flex flex-col items-center gap-1">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            Recent
-                        </div>
+                    <button onClick={() => setActiveTab('recents')} className={`flex flex-col items-center justify-center py-2.5 sm:py-3 rounded-lg transition-colors ${activeTab === 'recents' ? 'text-[#3B82F6] bg-[#1A1A1A]' : 'text-[#6B6B6B] hover:bg-[#1A1A1A]'
+                        }`}>
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs sm:text-sm font-medium">Recent</span>
                     </button>
                 </div>
 

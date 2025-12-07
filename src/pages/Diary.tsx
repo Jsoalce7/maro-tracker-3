@@ -14,10 +14,15 @@ import { useNutrition } from '../hooks/useNutrition';
 import { useWater } from '../hooks/useWater';
 import { supabase } from '../lib/supabase';
 import { MealType, FoodEntry, FoodItem } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { useNavBarStore } from '../stores/navBarStore';
+import { getTodayLocal } from '../utils/date';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export function Diary() {
+    const navigate = useNavigate();
+    const { hideNavBar, showNavBar } = useNavBarStore();
     const { selectedDate, setSelectedDate } = useAppStore();
     const { session } = useAuthStore();
     const [showAddFood, setShowAddFood] = useState(false);
@@ -87,7 +92,7 @@ export function Diary() {
     const formatSelectedDate = () => {
         // ... (existing logic)
         const date = new Date(selectedDate);
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayLocal();
         if (selectedDate === today) return 'Today';
         return date.toLocaleDateString('en-US', {
             weekday: 'short', month: 'short', day: 'numeric'
@@ -95,6 +100,7 @@ export function Diary() {
     };
 
     const openAddFood = (mealType: MealType) => {
+        hideNavBar(); // Hide nav on mobile/tablet
         setSelectedMealType(mealType);
         setShowAddFood(true);
         setShowMealSelector(false);
@@ -194,9 +200,9 @@ export function Diary() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0F0F0F] p-4 pb-24">
+        <div className="min-h-screen bg-[#0F0F0F] page-container">
             {/* Header */}
-            <header className="py-2 mb-3 flex items-center justify-between">
+            <header className="px-4 py-2 mb-3 flex items-center justify-between safe-top">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Diary</h1>
                     <p className="text-[#6B6B6B] text-sm">View and edit past entries</p>
@@ -335,7 +341,12 @@ export function Diary() {
             {showAddFood && (
                 <AddFoodModal
                     mealType={selectedMealType || undefined}
-                    onClose={() => { setShowAddFood(false); setSelectedMealType(null); setManageMode(false); }}
+                    onClose={() => {
+                        showNavBar();
+                        setShowAddFood(false);
+                        setSelectedMealType(null);
+                        setManageMode(false);
+                    }}
                     onAddFood={handleAddFood}
                     mode={manageMode ? 'manage' : 'add'}
                 />

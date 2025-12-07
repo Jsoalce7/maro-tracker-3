@@ -1,3 +1,5 @@
+import { useAppStore } from '../../stores/appStore';
+import { isToday } from '../../utils/date';
 import { useState, useMemo } from 'react';
 
 interface MonthCalendarProps {
@@ -63,8 +65,8 @@ export function MonthCalendar({ selectedDate, onSelectDate, loggedDates = [] }: 
         setViewDate(new Date(year, month + 1, 1));
     };
 
-    const isToday = (dateStr: string) => {
-        return dateStr === new Date().toISOString().split('T')[0];
+    const isTodayDate = (dateStr: string) => {
+        return isToday(dateStr);
     };
 
     const isSelected = (dateStr: string) => {
@@ -115,7 +117,7 @@ export function MonthCalendar({ selectedDate, onSelectDate, loggedDates = [] }: 
               relative aspect-square flex items-center justify-center rounded text-xs transition-colors
               ${isCurrentMonth ? 'text-white' : 'text-[#4A4A4A]'}
               ${isSelected(date) ? 'bg-[#3B82F6] text-white' : 'hover:bg-[#242424]'}
-              ${isToday(date) && !isSelected(date) ? 'ring-1 ring-[#3B82F6]' : ''}
+              ${isTodayDate(date) && !isSelected(date) ? 'ring-1 ring-[#3B82F6]' : ''}
             `}
                     >
                         {day}

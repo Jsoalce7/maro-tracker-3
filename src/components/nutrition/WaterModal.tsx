@@ -77,12 +77,12 @@ export function WaterModal({ date, onClose }: WaterModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4" style={{ touchAction: 'none' }}>
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative z-10 w-full max-w-sm bg-[#1A1A1A] rounded-2xl p-5 space-y-6 animate-slide-up border border-[#2A2A2A]">
+            <div className="relative z-10 w-full modal-safe-mobile sm:max-w-sm bg-[#1A1A1A] sm:rounded-2xl p-5 space-y-6 border border-[#2A2A2A]">
                 {/* Header */}
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center modal-header-safe">
                     <h2 className="text-xl font-bold text-white">Log Water</h2>
                     <button onClick={onClose} className="text-[#6B6B6B] p-1">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

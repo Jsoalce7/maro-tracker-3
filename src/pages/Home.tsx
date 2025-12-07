@@ -10,8 +10,14 @@ import { useNutrition } from '../hooks/useNutrition';
 import { useWater } from '../hooks/useWater';
 import { MealType, FoodEntry, FoodItem } from '../types';
 import { WaterModal } from '../components/nutrition/WaterModal';
+import { useNavigate } from 'react-router-dom';
+import { useNavBarStore } from '../stores/navBarStore';
+import { getTodayLocal, formatDateDisplay } from '../utils/date';
 
 export function Home() {
+    const navigate = useNavigate();
+    const { hideNavBar, showNavBar } = useNavBarStore();
+
     // UI State
     const { showAddFood, selectedMealType, openAddFood, closeAddFood } = useAppStore();
     // Added state for meal selector
@@ -22,9 +28,15 @@ export function Home() {
 
     // Data Hooks
     const { targets } = useProfile();
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayLocal();
     const { dayLog, addEntry, deleteEntry, updateEntry, isLoading } = useNutrition(today);
     const { waterLogs, totalWaterMl } = useWater(today);
+
+    // Open Add Food modal with nav bar control
+    const handleOpenAddFood = (mealType: MealType) => {
+        hideNavBar(); // Hide nav on mobile/tablet
+        openAddFood(mealType);
+    };
 
     // Default targets if loading
     const currentTargets = targets || {
@@ -35,6 +47,7 @@ export function Home() {
         bmr: 0,
         tdee: 0
     };
+
 
     // Derived entries from queries
     const entries = useMemo(() => {
@@ -190,17 +203,20 @@ export function Home() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0F0F0F] p-4 space-y-4 pb-24">
+        <div className="min-h-screen bg-[#0F0F0F] page-container">
             {/* Header */}
-            <header className="py-2 flex items-center justify-between">
+            <header className="py-2 px-4 flex items-center justify-between safe-top">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Today</h1>
                     <p className="text-[#6B6B6B] text-sm">
-                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        {formatDateDisplay(today)}
                     </p>
                 </div>
                 <button
-                    onClick={() => setShowMealSelector(true)}
+                    onClick={() => {
+                        hideNavBar();
+                        setShowMealSelector(true);
+                    }}
                     className="w-10 h-10 bg-[#3B82F6] rounded-full flex items-center justify-center text-white hover:bg-[#2563EB] transition-colors shadow-lg"
                 >
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,35 +225,41 @@ export function Home() {
                 </button>
             </header>
 
-            {/* Daily Nutrition Card */}
-            <DailyNutritionCard
-                calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
-                protein={{ consumed: totals.protein, target: currentTargets.protein_g }}
-                fat={{ consumed: totals.fat, target: currentTargets.fat_g }}
-                carbs={{ consumed: totals.carbs, target: currentTargets.carbs_g }}
-                water={totals.water}
-                caffeine={totals.caffeine}
-            />
+            {/* Main Content */}
+            <div className="px-4 space-y-4">
+                {/* Daily Nutrition Card */}
+                <DailyNutritionCard
+                    calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
+                    protein={{ consumed: totals.protein, target: currentTargets.protein_g }}
+                    fat={{ consumed: totals.fat, target: currentTargets.fat_g }}
+                    carbs={{ consumed: totals.carbs, target: currentTargets.carbs_g }}
+                    water={totals.water}
+                    caffeine={totals.caffeine}
+                />
 
-            {/* Meals Section */}
-            <section className="space-y-3">
-                <h2 className="text-lg font-semibold text-white">Meals</h2>
-                {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                    <MealCard
-                        key={mealType}
-                        type={mealType}
-                        entries={entries[mealType]}
-                        totalCalories={getMealCalories(mealType)}
-                        onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                        onEditEntry={handleEditGroup}
-                    />
-                ))}
-            </section>
+                {/* Meals Section */}
+                <section className="space-y-3">
+                    <h2 className="text-lg font-semibold text-white">Meals</h2>
+                    {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
+                        <MealCard
+                            key={mealType}
+                            type={mealType}
+                            entries={entries[mealType]}
+                            totalCalories={getMealCalories(mealType)}
+                            onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
+                            onEditEntry={handleEditGroup}
+                        />
+                    ))}
+                </section>
+            </div>
 
             {/* Meal Selector Modal */}
             {showMealSelector && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMealSelector(false)} />
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => {
+                        showNavBar();
+                        setShowMealSelector(false);
+                    }} />
                     <div className="relative z-10 bg-[#141414] w-full max-w-sm rounded-2xl p-5 space-y-3 border border-[#2A2A2A] animate-slide-up">
                         <h3 className="text-white font-bold text-center text-lg mb-2">Add Food</h3>
                         {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map(type => (
@@ -247,10 +269,10 @@ export function Home() {
                                     // Find meal by type
                                     // const meal = dayLog?.meals.find(m => m.meal_type === type);
                                     // if (meal) {
-                                    openAddFood(type);
+                                    handleOpenAddFood(type);
                                     // }    }
                                 }}
-                                className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group"
+                                className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group min-h-[56px]"
                             >
                                 <span className="capitalize font-medium text-white">{type}</span>
                                 <span className="text-[#6B6B6B] group-hover:text-white">+ Add</span>
@@ -262,7 +284,7 @@ export function Home() {
                                 setShowWaterModal(true);
                                 setShowMealSelector(false);
                             }}
-                            className="w-full text-left p-4 rounded-xl bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/50 transition-colors flex items-center justify-between group mt-2"
+                            className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/50 transition-colors flex items-center justify-between group mt-2 min-h-[56px]"
                         >
                             <div className="flex items-center gap-2">
                                 <span className="text-blue-400">💧</span>
@@ -275,9 +297,9 @@ export function Home() {
                             onClick={() => {
                                 setShowMealSelector(false);
                                 setManageMode(true);
-                                openAddFood('snacks'); // Hack to trigger modal - generic type
+                                handleOpenAddFood('snacks'); // Hack to trigger modal - generic type
                             }}
-                            className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2"
+                            className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2 min-h-[56px]"
                         >
                             <div className="flex items-center gap-2">
                                 <span className="text-[#6B6B6B]">⚙️</span>
@@ -287,7 +309,10 @@ export function Home() {
                         </button>
 
                         <button
-                            onClick={() => setShowMealSelector(false)}
+                            onClick={() => {
+                                showNavBar();
+                                setShowMealSelector(false);
+                            }}
                             className="w-full py-3 text-[#6B6B6B] hover:text-white font-medium"
                         >
                             Cancel
@@ -300,7 +325,11 @@ export function Home() {
             {showAddFood && (
                 <AddFoodModal
                     mealType={selectedMealType || undefined}
-                    onClose={() => { closeAddFood(); setManageMode(false); }}
+                    onClose={() => {
+                        showNavBar();
+                        closeAddFood();
+                        setManageMode(false);
+                    }}
                     onAddFood={handleAddFood}
                     mode={manageMode ? 'manage' : 'add'}
                 />

@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import { MealType } from '../types';
+import { getTodayLocal } from '../utils/date';
 
 interface AppState {
-    // Current day & navigation
-    selectedDate: string; // YYYY-MM-DD
-
-    // UI Consumables
+    // UI State
+    selectedDate: string;
     showAddFood: boolean;
     selectedMealType: MealType | null;
 
@@ -15,18 +14,9 @@ interface AppState {
     closeAddFood: () => void;
 }
 
-// Get today's date in YYYY-MM-DD format (User's Local Time)
-const getToday = () => {
-    const d = new Date();
-    // Adjust for timezone offset to get local YYYY-MM-DD
-    const offset = d.getTimezoneOffset() * 60000;
-    const local = new Date(d.getTime() - offset);
-    return local.toISOString().split('T')[0];
-};
-
 export const useAppStore = create<AppState>((set) => ({
     // Initial state
-    selectedDate: getToday(),
+    selectedDate: getTodayLocal(),
     showAddFood: false,
     selectedMealType: null,
 

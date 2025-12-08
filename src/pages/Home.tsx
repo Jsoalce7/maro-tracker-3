@@ -108,7 +108,17 @@ export function Home() {
         }
 
         // Calculate Nutrition
-        const ratio = quantity / 100;
+        // Calculate Nutrition based on Unit
+        let quantityInGrams = quantity;
+        if (unit === 'serving') {
+            quantityInGrams = quantity * (food.serving_size_g || 100);
+        } else if (unit === 'oz') {
+            quantityInGrams = quantity * 28.3495;
+        } else if (unit === 'ml') {
+            quantityInGrams = quantity; // Approx 1g = 1ml
+        }
+
+        const ratio = quantityInGrams / 100;
         const nutrition = {
             calories: (food.calories_per_100g || 0) * ratio,
             protein: (food.protein_per_100g || 0) * ratio,
@@ -184,11 +194,10 @@ export function Home() {
         const [firstId, ...restIds] = entryIds;
         updateEntry({
             entryId: firstId,
-            quantity,
+            quantity: quantity, // This is quantity_g passed from EditEntryModal
             nutrition,
-            logged_at,
-            metric_quantity,
-            metric_unit
+            metric_quantity: metric_quantity,
+            metric_unit: metric_unit
         }, {
             onError: (err) => { console.error("Failed to update:", err); alert("Update failed."); },
             onSuccess: () => {

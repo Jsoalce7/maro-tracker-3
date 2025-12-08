@@ -150,7 +150,17 @@ export function AddFoodPage() {
         }
 
         // Calculate nutrition based on quantity
-        const ratio = qty / 100;
+        // Calculate Nutrition based on Unit
+        let quantityInGrams = qty;
+        if (servingUnit === 'serving') {
+            quantityInGrams = qty * (selectedFood.serving_size_g || 100);
+        } else if (servingUnit === 'oz') {
+            quantityInGrams = qty * 28.3495;
+        } else if (servingUnit === 'ml') {
+            quantityInGrams = qty; // Approx 1g = 1ml
+        }
+
+        const ratio = quantityInGrams / 100;
         const nutrition = {
             calories: (selectedFood.calories_per_100g || 0) * ratio,
             protein: (selectedFood.protein_per_100g || 0) * ratio,
@@ -183,7 +193,7 @@ export function AddFoodPage() {
             foodId: (isCustom || isRecipe) ? undefined : selectedFood.id,
             customFoodId: (isCustom && !isRecipe) ? selectedFood.id : undefined,
             recipeId: (isRecipe) ? selectedFood.id : undefined,
-            quantity: Number(qty) || 0,
+            quantity: quantityInGrams,
             nutrition,
             caffeine_mg,
             water_ml,

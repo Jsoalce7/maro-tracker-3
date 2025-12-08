@@ -117,18 +117,19 @@ export function Diary() {
         const meal = dayLog.meals.find(m => m.meal_type === selectedMealType);
         if (!meal) return;
 
-        // Convert quantity to grams/ml for macro calculation
-        // Food nutrition is stored per 100g/ml
-        let quantityInGrams = quantity;
-        if (unit === 'oz') {
-            quantityInGrams = quantity * 28.3495;
-        } else if (unit === 'serving') {
-            // If unit is 'serving', we assume quantity is number of servings
-            // and multiply by the food's defined serving size (g)
-            quantityInGrams = quantity * (food.serving_size_g || 100);
-        }
+
 
         // Ratio for per-100g values
+        // Calculate Nutrition based on Unit
+        let quantityInGrams = quantity;
+        if (unit === 'serving') {
+            quantityInGrams = quantity * (food.serving_size_g || 100);
+        } else if (unit === 'oz') {
+            quantityInGrams = quantity * 28.3495;
+        } else if (unit === 'ml') {
+            quantityInGrams = quantity; // Approx 1g = 1ml
+        }
+
         const ratio = quantityInGrams / 100;
 
         const nutrition = {
@@ -149,12 +150,12 @@ export function Diary() {
             foodId: (isCustom || isRecipe) ? undefined : food.id,
             customFoodId: (isCustom && !isRecipe) ? food.id : undefined,
             recipeId: (isRecipe) ? food.id : undefined,
-            quantity: quantityInGrams, // Always store standardized grams/ml in quantity_g
+            quantity: quantityInGrams, // Store calculated grams
             nutrition,
             caffeine_mg,
             water_ml,
-            metric_quantity: Number(quantity), // Store original user input for display
-            metric_unit: unit,
+            metric_quantity: quantity, // Store original input
+            metric_unit: unit          // Store unit
         }, {
             onError: (err) => { console.error("Failed to add entry:", err); alert("Failed to add food entry."); },
             onSuccess: () => { setShowAddFood(false); setSelectedMealType(null); }

@@ -17,7 +17,7 @@ export function AppShell({ children }: AppShellProps) {
     const shouldShowNav = !isMobileOrTablet || isVisible;
 
     return (
-        <div className="min-h-screen bg-[#0F0F0F] flex flex-col">
+        <div className="min-h-screen bg-[#050505] flex flex-col">
             {/* Main Content */}
             <main className={`flex-1 overflow-y-auto ${shouldShowNav ? 'pb-20' : 'pb-0'}`}>
                 {children}
@@ -25,7 +25,7 @@ export function AppShell({ children }: AppShellProps) {
 
             {/* Bottom Navigation - Hidden on mobile/tablet when modals/pages are open */}
             <div className={`
-                fixed bottom-0 left-0 right-0 
+                fixed bottom-0 left-0 right-0 z-50
                 transition-transform duration-300 ease-in-out
                 ${shouldShowNav ? 'translate-y-0' : 'translate-y-full'}
             `}>

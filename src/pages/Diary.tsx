@@ -201,7 +201,7 @@ export function Diary() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0F0F0F] page-container">
+        <div className="min-h-screen bg-[#050505] page-container pb-32">
             {/* Header */}
             <header className="px-4 py-2 mb-3 flex items-center justify-between safe-top">
                 <div>
@@ -269,14 +269,16 @@ export function Diary() {
                     <section className="space-y-3">
                         <h2 className="text-base font-semibold text-white">Meals</h2>
                         {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                            <MealCard
-                                key={mealType}
-                                type={mealType}
-                                entries={entries[mealType]}
-                                totalCalories={getMealCalories(mealType)}
-                                onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                                onEditEntry={handleEditEntry}
-                            />
+                            entries[mealType].length > 0 && (
+                                <MealCard
+                                    key={mealType}
+                                    type={mealType}
+                                    entries={entries[mealType]}
+                                    totalCalories={getMealCalories(mealType)}
+                                    onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
+                                    onEditEntry={handleEditEntry}
+                                />
+                            )
                         ))}
                     </section>
                 </div>

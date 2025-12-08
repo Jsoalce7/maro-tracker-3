@@ -212,7 +212,7 @@ export function Home() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0F0F0F] page-container">
+        <div className="min-h-screen bg-[#050505] page-container">
             {/* Header */}
             <header className="py-2 px-4 flex items-center justify-between safe-top">
                 <div>
@@ -235,7 +235,7 @@ export function Home() {
             </header>
 
             {/* Main Content */}
-            <div className="px-4 space-y-4">
+            <div className="px-4 space-y-4 pb-32">
                 {/* Daily Nutrition Card */}
                 <DailyNutritionCard
                     calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
@@ -250,14 +250,16 @@ export function Home() {
                 <section className="space-y-3">
                     <h2 className="text-lg font-semibold text-white">Meals</h2>
                     {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                        <MealCard
-                            key={mealType}
-                            type={mealType}
-                            entries={entries[mealType]}
-                            totalCalories={getMealCalories(mealType)}
-                            onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                            onEditEntry={handleEditGroup}
-                        />
+                        entries[mealType].length > 0 && (
+                            <MealCard
+                                key={mealType}
+                                type={mealType}
+                                entries={entries[mealType]}
+                                totalCalories={getMealCalories(mealType)}
+                                onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
+                                onEditEntry={handleEditGroup}
+                            />
+                        )
                     ))}
                 </section>
             </div>

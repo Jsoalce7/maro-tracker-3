@@ -10,15 +10,15 @@ interface MacroBarProps {
 }
 
 const colorClasses = {
-    protein: 'bg-[#EF4444]',
-    fat: 'bg-[#F59E0B]',
-    carbs: 'bg-[#10B981]',
+    protein: 'bg-[#FF4C4C]',
+    fat: 'bg-[#FFC44D]',
+    carbs: 'bg-[#4CD964]',
 };
 
 const textColorClasses = {
-    protein: 'text-[#EF4444]',
-    fat: 'text-[#F59E0B]',
-    carbs: 'text-[#10B981]',
+    protein: 'text-[#FF4C4C]',
+    fat: 'text-[#FFC44D]',
+    carbs: 'text-[#4CD964]',
 };
 
 export function MacroBar({
@@ -37,27 +37,26 @@ export function MacroBar({
     const displayLabel = showRemaining ? 'left' : '';
 
     return (
-        <div className="space-y-2">
+        <div className="mb-4 last:mb-0">
             {/* Header row */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${colorClasses[color]}`} />
-                    <span className="text-sm text-white font-medium">{label}</span>
+                    <span className="text-[13px] text-[#F5F5F7] font-medium tracking-wide">{label}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <span className={`text-sm font-semibold ${isOver ? 'text-[#EF4444]' : 'text-white'}`}>
-                        {displayValue}
+                    <span className={`text-[13px] font-semibold ${isOver ? 'text-[#FF4C4C]' : 'text-[#F5F5F7]'}`}>
+                        {Math.round(displayValue)}
                     </span>
-                    <span className="text-sm text-[#6B6B6B]">
-                        / {target}{unit} {displayLabel}
+                    <span className="text-[11px] text-[#8A8F99] font-medium">
+                        / {target}{unit}
                     </span>
                 </div>
             </div>
 
             {/* Progress bar */}
-            <div className="h-1 bg-[#2A2A2A] rounded-full overflow-hidden">
+            <div className="h-[4px] bg-[#262932] rounded-full overflow-hidden">
                 <div
-                    className={`h-full rounded-full transition-all duration-500 ease-out ${isOver ? 'bg-[#EF4444]' : colorClasses[color]}`}
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${isOver ? 'bg-[#FF4C4C]' : colorClasses[color]}`}
                     style={{ width: `${Math.min(percentage, 100)}%` }}
                 />
             </div>

@@ -29,7 +29,7 @@ export function RingChart({
     ];
 
     // Gradient colors for the consumed portion
-    const consumedColor = percentage > 100 ? '#EF4444' : '#3B82F6';
+    const consumedColor = percentage > 100 ? '#FF4C4C' : '#4C8DFF';
     const remainingColor = '#2A2A2A';
 
     return (

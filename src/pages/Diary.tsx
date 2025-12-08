@@ -22,7 +22,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export function Diary() {
     const navigate = useNavigate();
-    const { hideNavBar, showNavBar } = useNavBarStore();
+    // const { hideNavBar, showNavBar } = useNavBarStore(); // Removed: Handled by useHideNavBar hook in child components
     const { selectedDate, setSelectedDate } = useAppStore();
     const { session } = useAuthStore();
     const [showAddFood, setShowAddFood] = useState(false);
@@ -100,7 +100,7 @@ export function Diary() {
     };
 
     const openAddFood = (mealType: MealType) => {
-        hideNavBar(); // Hide nav on mobile/tablet
+        // hideNavBar(); // Removed: Handled by Hook
         setSelectedMealType(mealType);
         setShowAddFood(true);
         setShowMealSelector(false);
@@ -219,8 +219,8 @@ export function Diary() {
             </header>
 
             {/* Responsive Layout */}
-            <div className="flex flex-col lg:flex-row lg:gap-6 lg:items-start">
-                <div className="lg:w-80 lg:flex-shrink-0 mb-4 lg:mb-0 lg:sticky lg:top-4">
+            <div className="flex flex-col sm:flex-row sm:gap-4 lg:gap-6 sm:items-start">
+                <div className="sm:w-64 md:w-72 lg:w-80 sm:flex-shrink-0 mb-4 sm:mb-0 sm:sticky sm:top-4">
                     <MonthCalendar
                         selectedDate={selectedDate}
                         onSelectDate={setSelectedDate}
@@ -345,7 +345,7 @@ export function Diary() {
                 <AddFoodModal
                     mealType={selectedMealType || undefined}
                     onClose={() => {
-                        showNavBar();
+                        // showNavBar(); // Removed: Handled by Hook
                         setShowAddFood(false);
                         setSelectedMealType(null);
                         setManageMode(false);
@@ -362,20 +362,26 @@ export function Diary() {
                     onClose={() => setEditingEntries(null)}
                     onUpdate={handleUpdateEntry}
                     onDelete={(ids) => {
-                        // Double confirm is handled in handleDeleteEntry if called directly, but here we call deleteEntry directly via prop or handler? 
+                        // Double confirm is handled in handleDeleteEntry if called directly, but here we call deleteEntry directly via prop or handler?
                         // EditEntryModal might call this.
                         // Let's defer delete logic to this handler
                         ids.forEach(id => deleteEntry(id));
                         setEditingEntries(null);
                     }}
-                    onEditFoodData={(foodId) => setEditingFoodId(foodId)}
+                    onEditFoodData={(foodId) => {
+                        // hideNavBar(); // Removed: Handled by Hook
+                        setEditingFoodId(foodId);
+                    }}
                 />
             )}
 
             {editingFoodId && (
                 <FoodDatabaseModal
                     initialFoodId={editingFoodId}
-                    onClose={() => setEditingFoodId(null)}
+                    onClose={() => {
+                        // showNavBar(); // Removed: Handled by Hook
+                        setEditingFoodId(null);
+                    }}
                 />
             )}
             {showWaterModal && (

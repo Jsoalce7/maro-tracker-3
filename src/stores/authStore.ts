@@ -6,7 +6,7 @@ interface AuthState {
     session: Session | null;
     isLoading: boolean;
     error: string | null;
-    initialize: () => Promise<void>;
+    initialize: () => Promise<(() => void) | void>;
     signInAnonymously: () => Promise<void>;
     signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
     signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -22,16 +22,33 @@ export const useAuthStore = create<AuthState>((set) => ({
     initialize: async () => {
         try {
             // Check initial session
-            const { data: { session } } = await supabase.auth.getSession();
-            set({ session, isLoading: false });
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (error) {
+                console.error('Session check error:', error);
+                // Even on error, we must finish loading to trigger redirects if needed
+                set({ session: null, isLoading: false });
+            } else {
+                set({ session, isLoading: false });
+            }
 
             // Listen for auth changes
-            supabase.auth.onAuthStateChange((_event, session) => {
-                set({ session });
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                console.log('Auth state changed:', event, !!session);
+
+                if (event === 'SIGNED_OUT') {
+                    set({ session: null, isLoading: false });
+                } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    set({ session, isLoading: false });
+                } else {
+                    set({ session });
+                }
             });
+
+            return () => subscription.unsubscribe();
         } catch (error) {
-            console.error('Auth initialization error:', error);
-            set({ isLoading: false });
+            console.error('Auth initialization unexpected error:', error);
+            set({ session: null, isLoading: false });
         }
     },
 

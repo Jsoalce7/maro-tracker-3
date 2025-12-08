@@ -9,12 +9,22 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
+    const location = useLocation();
     const { isVisible } = useNavBarStore();
     const isMobileOrTablet = shouldUseFullScreenPages(); // iOS/Android detection
 
-    // On mobile/tablet, respect the visibility state
-    // On desktop, always show nav bar
-    const shouldShowNav = !isMobileOrTablet || isVisible;
+    // Routes where bottom nav should ALWAYS be hidden
+    const HIDDEN_ROUTES = [
+        '/food-database',
+        '/add-food',
+        '/create-food',
+        '/create-recipe'
+    ];
+    const isHiddenRoute = HIDDEN_ROUTES.some(route => location.pathname.startsWith(route));
+
+    // Consistently hide bottom nav if explicitly hidden (by modal) OR if on a hidden route
+    // This applies to ALL devices (Mobile, Tablet, Desktop)
+    const shouldShowNav = !isHiddenRoute && isVisible;
 
     return (
         <div className="min-h-screen bg-[#050505] flex flex-col">

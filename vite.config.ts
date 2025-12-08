@@ -8,5 +8,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), basicSsl()],
   server: {
     host: true, // Expose to network
+    proxy: {
+      '/_supaproxy': {
+        target: 'https://maro.revisioniai.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/_supaproxy/, ''),
+      },
+    }
   }
 })

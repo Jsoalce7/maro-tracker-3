@@ -55,6 +55,17 @@ function App() {
           {/* Create Pages (Full Screen) */}
           <Route path="/create-food" element={<RequireAuth withShell={false}><CreateFood /></RequireAuth>} />
           <Route path="/create-recipe" element={<RequireAuth withShell={false}><CreateRecipe /></RequireAuth>} />
+
+          {/* Catch-all 404 */}
+          <Route path="*" element={
+            <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 text-center">
+              <h1 className="text-4xl font-bold text-white mb-2">404</h1>
+              <p className="text-[#8E8E93] mb-6">Page not found</p>
+              <a href="/" className="px-6 py-3 bg-[#3B82F6] rounded-xl text-white font-medium hover:bg-[#2563EB] transition-colors">
+                Go Home
+              </a>
+            </div>
+          } />
         </Routes>
       </Router>
     </QueryClientProvider>

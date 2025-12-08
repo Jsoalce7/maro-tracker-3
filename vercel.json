@@ -2,5 +2,15 @@
     "name": "maro-tracker",
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
-    "framework": "vite"
+    "framework": "vite",
+    "rewrites": [
+        {
+            "source": "/_supaproxy/:match*",
+            "destination": "https://maro.revisioniai.com/:match*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
 }

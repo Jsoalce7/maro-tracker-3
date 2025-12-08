@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWater } from '../../hooks/useWater';
+import { useHideNavBar } from '../../hooks/useHideNavBar';
 
 interface WaterModalProps {
     date: string;
@@ -14,6 +15,7 @@ const BOTTLE_SIZES = [
 ];
 
 export function WaterModal({ date, onClose }: WaterModalProps) {
+    useHideNavBar();
     const { addWater, resetWater } = useWater(date);
 
     // State

@@ -59,7 +59,10 @@ const CATEGORIES: Record<string, string[]> = {
     'Other': []
 };
 
+import { useHideNavBar } from '../../hooks/useHideNavBar';
+
 export function AddFoodModal({ mealType, onClose, onAddFood, mode }: AddFoodModalProps) {
+    useHideNavBar(); // Automatically hide nav bar when this modal is open
     const navigate = useNavigate();
     const { searchFoods, recentFoods, favorites, deleteCustomFood, toggleFavorite } = useFood();
     const { recipes, deleteRecipe } = useRecipes();

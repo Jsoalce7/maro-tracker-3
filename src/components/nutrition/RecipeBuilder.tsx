@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useFood } from '../../hooks/useFood';
 import { useRecipes } from '../../hooks/useRecipes';
 import { FoodItem } from '../../types';
+import { useHideNavBar } from '../../hooks/useHideNavBar';
 
 interface RecipeBuilderProps {
     onClose: () => void;
@@ -10,6 +11,7 @@ interface RecipeBuilderProps {
 }
 
 export function RecipeBuilder({ onClose, onSave, initialRecipe }: RecipeBuilderProps) {
+    useHideNavBar();
     // Recipe State
     const [name, setName] = useState(initialRecipe?.name || '');
     const [servings, setServings] = useState(initialRecipe?.servings_per_recipe || 1);

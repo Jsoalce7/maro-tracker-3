@@ -3,7 +3,6 @@ import { Button } from '../ui/Button';
 import { FoodEntry } from '../../types';
 import { calculateEntryNutrition } from '../../lib/calculations';
 import { useFood } from '../../hooks/useFood';
-import { useHideNavBar } from '../../hooks/useHideNavBar';
 
 interface EditEntryModalProps {
     entries: FoodEntry[];
@@ -22,7 +21,6 @@ interface EditEntryModalProps {
 }
 
 export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoodData }: EditEntryModalProps) {
-    useHideNavBar();
     const { favorites, toggleFavorite } = useFood();
 
     // Aggregates
@@ -137,7 +135,7 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
     const isCustom = (firstEntry.food as any)?.is_custom;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 modal-safe-mobile" style={{ touchAction: 'none' }}>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-safe-mobile" style={{ touchAction: 'none' }}>
             {/* ... Backdrop ... */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"

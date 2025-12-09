@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './components/layout/AppShell';
 import { Home } from './pages/Home';
 import { Diary } from './pages/Diary';
+import { AddFood } from './pages/AddFood';
+import { LogWater } from './pages/LogWater';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
 import { CreateFood } from './pages/CreateFood';
@@ -33,7 +35,7 @@ function RequireAuth({ children, withShell = true }: { children: React.ReactNode
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return withShell ? <AppShell>{children}</AppShell> : <>{children}</>;
+  return withShell ? <AppShell>{children || <Outlet />}</AppShell> : <>{children || <Outlet />}</>;
 }
 
 function App() {
@@ -48,13 +50,21 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
-          <Route path="/diary" element={<RequireAuth><Diary /></RequireAuth>} />
-          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
 
-          {/* Create Pages (Full Screen) */}
-          <Route path="/create-food" element={<RequireAuth withShell={false}><CreateFood /></RequireAuth>} />
-          <Route path="/create-recipe" element={<RequireAuth withShell={false}><CreateRecipe /></RequireAuth>} />
+          {/* Main Layout (With Layout & BottomNav) */}
+          <Route element={<RequireAuth withShell={true}><div /></RequireAuth>}>
+            <Route path="/" element={<Home />} />
+            <Route path="/diary" element={<Diary />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
+
+          {/* Full Screen Layout (No BottomNav) */}
+          <Route element={<RequireAuth withShell={false}><div /></RequireAuth>}>
+            <Route path="/add-food" element={<AddFood />} />
+            <Route path="/log-water" element={<LogWater />} />
+            <Route path="/create-food" element={<CreateFood />} />
+            <Route path="/create-recipe" element={<CreateRecipe />} />
+          </Route>
 
           {/* Catch-all 404 */}
           <Route path="*" element={

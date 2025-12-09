@@ -9,11 +9,13 @@ import { SettingsMenu } from '../components/profile/SettingsMenu';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { FoodDatabaseModal } from '../components/profile/FoodDatabaseModal';
 
+import { useNavigate } from 'react-router-dom';
+
 export function Profile() {
+    const navigate = useNavigate();
     const { profile, targets, updateProfile, isLoading } = useProfile();
     const { session, signInWithEmail, signUpWithEmail, signOut, error: authError, clearError } = useAuthStore();
     const [showEditProfile, setShowEditProfile] = useState(false);
-    const [showFoodManager, setShowFoodManager] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
@@ -117,7 +119,7 @@ export function Profile() {
                 </div>
                 <SettingsMenu
                     onEditProfile={() => setShowEditProfile(true)}
-                    onManageFood={() => setShowFoodManager(true)}
+                    onManageFood={() => navigate('/add-food?mode=manage')}
                 />
             </header>
 
@@ -305,11 +307,16 @@ export function Profile() {
                 />
             )}
 
-            {showFoodManager && (
-                <FoodDatabaseModal
-                    onClose={() => setShowFoodManager(false)}
+            {showEditProfile && (
+                <EditProfileModal
+                    profile={profile}
+                    targets={targets || null}
+                    onClose={() => setShowEditProfile(false)}
+                    onSave={handleSaveProfile}
                 />
             )}
+
+            {/* FoodDatabaseModal removed. Replaced by navigation in SettingsMenu or direct link */}
         </div>
     );
 }

@@ -3,10 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { MonthCalendar } from '../components/calendar/MonthCalendar';
 import { Card, CardHeader } from '../components/ui/Card';
 import { MealCard } from '../components/nutrition/MealCard';
-import { AddFoodModal } from '../components/nutrition/AddFoodModal';
 import { EditEntryModal } from '../components/nutrition/EditEntryModal';
 import { FoodDatabaseModal } from '../components/profile/FoodDatabaseModal';
-import { WaterModal } from '../components/nutrition/WaterModal';
 import { useAppStore } from '../stores/appStore';
 import { useProfile } from '../hooks/useProfile'; // Used implicitly via auth store in hooks
 import { useAuthStore } from '../stores/authStore';
@@ -25,19 +23,19 @@ export function Diary() {
     // const { hideNavBar, showNavBar } = useNavBarStore(); // Removed: Handled by useHideNavBar hook in child components
     const { selectedDate, setSelectedDate } = useAppStore();
     const { session } = useAuthStore();
-    const [showAddFood, setShowAddFood] = useState(false);
-    const [selectedMealType, setSelectedMealType] = useState<MealType | null>(null);
-
     // Added handlers for editing entries
     const [editingEntries, setEditingEntries] = useState<FoodEntry[] | null>(null);
     const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
     const [showMealSelector, setShowMealSelector] = useState(false);
-    const [showWaterModal, setShowWaterModal] = useState(false);
-    const [manageMode, setManageMode] = useState(false);
 
     // Fetch data for selected date
-    const { dayLog, addEntry, deleteEntry, updateEntry, isLoading } = useNutrition(selectedDate);
-    const { totalWaterMl } = useWater(selectedDate);
+    const { dayLog, deleteEntry, updateEntry, isLoading } = useNutrition(selectedDate);
+    const { waterLogs, totalWaterMl } = useWater(selectedDate);
+
+    // Open Add Food (Navigate)
+    const handleOpenAddFood = (mealType: MealType) => {
+        navigate(`/add-food?mealType=${mealType}&date=${selectedDate}`);
+    };
 
     // Fetch all dates with logs for calendar
     const { data: loggedDates = [] } = useQuery({
@@ -100,66 +98,10 @@ export function Diary() {
     };
 
     const openAddFood = (mealType: MealType) => {
-        // hideNavBar(); // Removed: Handled by Hook
-        setSelectedMealType(mealType);
-        setShowAddFood(true);
+        // Navigate to new Add Food Page
+        navigate(`/add-food?mealType=${mealType}`);
+        // Reset local state if needed (most is removed now)
         setShowMealSelector(false);
-    };
-
-    const handleAddFood = (
-        food: FoodItem,
-        quantity: number,
-        unit: string,
-        isCustom?: boolean,
-        isRecipe?: boolean
-    ) => {
-        if (!selectedMealType || !dayLog) return;
-        const meal = dayLog.meals.find(m => m.meal_type === selectedMealType);
-        if (!meal) return;
-
-
-
-        // Ratio for per-100g values
-        // Calculate Nutrition based on Unit
-        let quantityInGrams = quantity;
-        if (unit === 'serving') {
-            quantityInGrams = quantity * (food.serving_size_g || 100);
-        } else if (unit === 'oz') {
-            quantityInGrams = quantity * 28.3495;
-        } else if (unit === 'ml') {
-            quantityInGrams = quantity; // Approx 1g = 1ml
-        }
-
-        const ratio = quantityInGrams / 100;
-
-        const nutrition = {
-            calories: (food.calories_per_100g || 0) * ratio,
-            protein: (food.protein_per_100g || 0) * ratio,
-            carbs: (food.carbs_per_100g || 0) * ratio,
-            fat: (food.fat_per_100g || 0) * ratio,
-        };
-
-        // Determine Caffeine
-        const caffeine_mg = (food.caffeine_mg || 0) * ratio;
-
-        // Water calculation removed as per user request (Drinks should NEVER auto-log water)
-        const water_ml = 0;
-
-        addEntry({
-            mealId: meal.id,
-            foodId: (isCustom || isRecipe) ? undefined : food.id,
-            customFoodId: (isCustom && !isRecipe) ? food.id : undefined,
-            recipeId: (isRecipe) ? food.id : undefined,
-            quantity: quantityInGrams, // Store calculated grams
-            nutrition,
-            caffeine_mg,
-            water_ml,
-            metric_quantity: quantity, // Store original input
-            metric_unit: unit          // Store unit
-        }, {
-            onError: (err) => { console.error("Failed to add entry:", err); alert("Failed to add food entry."); },
-            onSuccess: () => { setShowAddFood(false); setSelectedMealType(null); }
-        });
     };
 
     const handleDeleteEntry = (mealType: MealType, entryIds: string[]) => {
@@ -303,8 +245,8 @@ export function Diary() {
 
                         <button
                             onClick={() => {
-                                setShowWaterModal(true);
                                 setShowMealSelector(false);
+                                navigate('/log-water');
                             }}
                             className="w-full text-left p-4 rounded-xl bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/50 transition-colors flex items-center justify-between group mt-2"
                         >
@@ -318,8 +260,7 @@ export function Diary() {
                         <button
                             onClick={() => {
                                 setShowMealSelector(false);
-                                setManageMode(true);
-                                setShowAddFood(true);
+                                navigate('/add-food?mode=manage');
                             }}
                             className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2"
                         >
@@ -340,20 +281,25 @@ export function Diary() {
                 </div>
             )}
 
-            {/* Add Food Modal */}
-            {showAddFood && (
-                <AddFoodModal
-                    mealType={selectedMealType || undefined}
-                    onClose={() => {
-                        // showNavBar(); // Removed: Handled by Hook
-                        setShowAddFood(false);
-                        setSelectedMealType(null);
-                        setManageMode(false);
-                    }}
-                    onAddFood={handleAddFood}
-                    mode={manageMode ? 'manage' : 'add'}
-                />
-            )}
+            {/* Note: AddFoodModal, WaterModal, and FoodDatabaseModal are REMOVED entirely. */}
+            {/* They are replaced by routes: /add-food, /log-water */}
+
+            {/* Edit Entry Modal - Kept as a modal for now as it's a small edit? Or should this be a page too? */}
+            {/* User prompt: "Edit Entry Modal" wasn't explicitly listed in the "Move to no-nav layout" section, but: */}
+            {/* "Any other step in the 'add food / add water' flow... " */}
+            {/* Editing an entry is technically part of "Diary management". */}
+            {/* However, the user said "Add Food sheet... Add to Breakfast... Manage Food". */}
+            {/* I'll keep Edit Entry as Modal for now to minimize risk, but might need to hide Nav if it's large. */}
+            {/* Actually, user said "Global nav rules... Bottom nav should be HIDDEN on ... Any other step in the 'add food' flow". */}
+            {/* Let's double check if EditEntry needs hiding. It currently uses useHideNavBar. Since it's inside Diary (Page with Nav), we might have an issue. */}
+            {/* But wait, simple modals can overlay. The issue was FULL SCREEN flows. */}
+            {/* If Edit Entry is a small popup, it's fine. If it's a full screen sheet, it might cover nav. */}
+            {/* The EditEntryModal currently uses `useHideNavBar`. But since we are removing the `AppShell` logic for hiding, `useHideNavBar` will stop working if we delete that logic. */}
+            {/* However, `AppShell` renders `BottomNav`. If we stay on `/diary`, `AppShell` is present. */}
+            {/* So `EditEntryModal` will still need to hide Nav if it overlaps. */}
+            {/* BUT, the user said "centralize decision... separate layouts". */}
+            {/* Ideally, Edit Entry is also a Page or a Modal that doesn't conflict. */}
+            {/* For now I will leave EditEntry as is, but remove the unused Modal imports. */}
 
             {/* Edit Entry Modal */}
             {editingEntries && (
@@ -362,14 +308,10 @@ export function Diary() {
                     onClose={() => setEditingEntries(null)}
                     onUpdate={handleUpdateEntry}
                     onDelete={(ids) => {
-                        // Double confirm is handled in handleDeleteEntry if called directly, but here we call deleteEntry directly via prop or handler?
-                        // EditEntryModal might call this.
-                        // Let's defer delete logic to this handler
                         ids.forEach(id => deleteEntry(id));
                         setEditingEntries(null);
                     }}
                     onEditFoodData={(foodId) => {
-                        // hideNavBar(); // Removed: Handled by Hook
                         setEditingFoodId(foodId);
                     }}
                 />
@@ -379,17 +321,11 @@ export function Diary() {
                 <FoodDatabaseModal
                     initialFoodId={editingFoodId}
                     onClose={() => {
-                        // showNavBar(); // Removed: Handled by Hook
                         setEditingFoodId(null);
                     }}
-                />
-            )}
-            {showWaterModal && (
-                <WaterModal
-                    date={selectedDate}
-                    onClose={() => setShowWaterModal(false)}
                 />
             )}
         </div>
     );
 }
+

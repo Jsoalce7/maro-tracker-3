@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useWater } from '../../hooks/useWater';
-import { useHideNavBar } from '../../hooks/useHideNavBar';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useWater } from '../hooks/useWater';
+import { useAppStore } from '../stores/appStore';
 
 interface WaterModalProps {
-    date: string;
-    onClose: () => void;
+    // No props needed for page, uses URL/Store
 }
 
 const BOTTLE_SIZES = [
@@ -14,9 +14,13 @@ const BOTTLE_SIZES = [
     { label: 'Gallon', amount: 128, unit: 'oz' },
 ];
 
-export function WaterModal({ date, onClose }: WaterModalProps) {
-    useHideNavBar();
-    const { addWater, resetWater } = useWater(date);
+export function LogWater() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // Use selected date from store, or fallback to today
+    const { selectedDate } = useAppStore();
+    const { addWater, resetWater } = useWater(selectedDate); // useWater uses string date
 
     // State
     const [customSize, setCustomSize] = useState('');
@@ -55,7 +59,7 @@ export function WaterModal({ date, onClose }: WaterModalProps) {
 
     const handleAddWater = (amountMl: number) => {
         addWater(amountMl);
-        onClose();
+        navigate(-1);
     };
 
     const handleManualAdd = () => {
@@ -69,40 +73,38 @@ export function WaterModal({ date, onClose }: WaterModalProps) {
     const handleReset = async () => {
         await resetWater();
         setShowResetConfirm(false);
-        onClose();
+        navigate(-1);
     };
 
     const handleQuickAdd = (amtOz: number) => {
         const ml = amtOz * 29.5735;
         addWater(Math.round(ml));
-        onClose();
+        navigate(-1);
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4" style={{ touchAction: 'none' }}>
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+        <div className="min-h-screen bg-[#1A1A1A] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 border-b border-[#2A2A2A] safe-top bg-[#1A1A1A]">
+                <h2 className="text-xl font-bold text-white">Log Water</h2>
+                <button onClick={() => navigate(-1)} className="text-[#6B6B6B] p-2 hover:bg-[#2A2A2A] rounded-full">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
 
-            <div className="relative z-10 w-full modal-safe-mobile sm:max-w-sm bg-[#1A1A1A] sm:rounded-2xl p-5 space-y-6 border border-[#2A2A2A]">
-                {/* Header */}
-                <div className="flex justify-between items-center modal-header-safe">
-                    <h2 className="text-xl font-bold text-white">Log Water</h2>
-                    <button onClick={onClose} className="text-[#6B6B6B] p-1">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-
+            <div className="p-5 space-y-6 flex-1 overflow-y-auto">
                 {/* Quick Add Grid */}
                 <div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         {BOTTLE_SIZES.map((size) => (
                             <button
                                 key={size.label}
                                 onClick={() => handleQuickAdd(size.amount)}
-                                className="flex flex-col items-center justify-center p-3 rounded-xl bg-[#242424] hover:bg-[#2A2A2A] text-white transition-colors group"
+                                className="flex flex-col items-center justify-center p-4 rounded-xl bg-[#242424] hover:bg-[#2A2A2A] text-white transition-colors group aspect-square"
                             >
-                                <span className="text-2xl mb-1">💧</span>
-                                <span className="font-medium text-xs">{size.label}</span>
-                                <span className="text-[10px] text-[#3B82F6]">{size.amount}{size.unit}</span>
+                                <span className="text-3xl mb-2">💧</span>
+                                <span className="font-medium text-sm">{size.label}</span>
+                                <span className="text-xs text-[#3B82F6]">{size.amount}{size.unit}</span>
                             </button>
                         ))}
                     </div>
@@ -131,7 +133,7 @@ export function WaterModal({ date, onClose }: WaterModalProps) {
                 {!isCustomInput ? (
                     <button
                         onClick={() => setIsCustomInput(true)}
-                        className="w-full py-3 rounded-xl border border-dashed border-[#2A2A2A] text-[#6B6B6B] hover:text-white hover:border-[#6B6B6B] transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-4 rounded-xl border border-dashed border-[#2A2A2A] text-[#6B6B6B] hover:text-white hover:border-[#6B6B6B] transition-colors flex items-center justify-center gap-2"
                     >
                         <span>+</span>
                         <span>Add Custom Amount</span>

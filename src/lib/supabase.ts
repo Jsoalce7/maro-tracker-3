@@ -1,4 +1,3 @@
-```javascript
 import { createClient } from '@supabase/supabase-js';
 
 // Use proxy path to bypass CORS/Cloudflare restrictions

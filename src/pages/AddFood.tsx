@@ -246,6 +246,33 @@ export function AddFood() {
         });
     };
 
+    // Brand Management Functions
+    const { updateCustomFood, allCustomFoods } = useFood();
+
+    const handleRenameBrand = (oldBrand: string, newBrand: string) => {
+        if (!newBrand.trim()) return;
+
+        // Update all foods with this brand
+        allCustomFoods?.filter(f => f.brand === oldBrand).forEach(food => {
+            updateCustomFood({ foodId: food.id, updates: { brand: newBrand } });
+        });
+
+        setEditingBrand(null);
+        setBrandNewName('');
+    };
+
+    const handleDeleteBrand = (brandToDelete: string) => {
+        if (!confirm(`Delete brand "${brandToDelete}"? This will remove the brand from all foods.`)) return;
+
+        // Clear brand from all foods
+        allCustomFoods?.filter(f => f.brand === brandToDelete).forEach(food => {
+            updateCustomFood({ foodId: food.id, updates: { brand: '' } });
+        });
+    };
+
+    // Get unique brands
+    const uniqueBrands = [...new Set(allCustomFoods?.map(f => f.brand).filter(Boolean))].sort();
+
     // --- RENDER LOGIC similar to Modal but adapting to page structure ---
 
     // Filter Logic for Display
@@ -327,6 +354,14 @@ export function AddFood() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {mode === 'manage' && (
+                            <button
+                                onClick={() => setShowBrandManagement(true)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border bg-[#1A1A1A] text-[#6B6B6B] border-[#2A2A2A] hover:text-white"
+                            >
+                                Edit Brands
+                            </button>
+                        )}
                         {mode !== 'manage' && (
                             <button
                                 onClick={() => {
@@ -708,6 +743,66 @@ export function AddFood() {
                     <button onClick={() => setActiveTab('recents')} className={`py-3 flex flex-col items-center gap-1 ${activeTab === 'recents' ? 'text-[#3B82F6]' : 'text-[#6B6B6B]'}`}>
                         <span className="text-sm font-medium">Recent</span>
                     </button>
+                </div>
+            )}
+
+            {/* Brand Management Modal */}
+            {showBrandManagement && (
+                <div className="fixed inset-0 z-50 bg-[#141414] flex flex-col">
+                    <div className="p-4 border-b border-[#2A2A2A] flex items-center justify-between safe-top">
+                        <h2 className="text-white font-bold text-lg">Manage Brands</h2>
+                        <button onClick={() => setShowBrandManagement(false)} className="text-[#6B6B6B]">Close</button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                        {uniqueBrands.length === 0 ? (
+                            <div className="text-center text-[#6B6B6B] py-8">No brands yet</div>
+                        ) : (
+                            uniqueBrands.map(brand => (
+                                <div key={brand} className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] p-3 flex items-center gap-3">
+                                    {editingBrand === brand ? (
+                                        <>
+                                            <input
+                                                type="text"
+                                                value={brandNewName}
+                                                onChange={e => setBrandNewName(e.target.value)}
+                                                className="flex-1 bg-[#0A0A0A] border border-[#3B82F6] rounded-lg px-3 py-2 text-white focus:outline-none"
+                                                placeholder="New brand name"
+                                                autoFocus
+                                            />
+                                            <button
+                                                onClick={() => handleRenameBrand(brand, brandNewName)}
+                                                className="px-3 py-2 bg-[#3B82F6] text-white rounded-lg text-sm font-medium"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={() => { setEditingBrand(null); setBrandNewName(''); }}
+                                                className="px-3 py-2 bg-[#2A2A2A] text-[#6B6B6B] rounded-lg text-sm"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex-1 text-white font-medium">{brand}</div>
+                                            <button
+                                                onClick={() => { setEditingBrand(brand); setBrandNewName(brand); }}
+                                                className="px-3 py-1.5 bg-[#2A2A2A] text-[#6B6B6B] hover:text-white rounded-lg text-xs"
+                                            >
+                                                Rename
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteBrand(brand)}
+                                                className="px-3 py-1.5 bg-[#2A2A2A] text-red-500 hover:bg-red-500/10 rounded-lg text-xs"
+                                            >
+                                                Delete
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             )}
 

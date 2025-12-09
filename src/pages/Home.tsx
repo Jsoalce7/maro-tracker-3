@@ -8,12 +8,10 @@ import { useNutrition } from '../hooks/useNutrition';
 import { useWater } from '../hooks/useWater';
 import { MealType, FoodEntry, FoodItem } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { useNavBarStore } from '../stores/navBarStore';
 import { getTodayLocal, formatDateDisplay } from '../utils/date';
 
 export function Home() {
     const navigate = useNavigate();
-    const { hideNavBar, showNavBar } = useNavBarStore();
 
     // Added state for meal selector
     const [showMealSelector, setShowMealSelector] = useState(false);

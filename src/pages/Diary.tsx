@@ -12,14 +12,12 @@ import { useWater } from '../hooks/useWater';
 import { supabase } from '../lib/supabase';
 import { MealType, FoodEntry, FoodItem } from '../types';
 import { useNavigate } from 'react-router-dom';
-import { useNavBarStore } from '../stores/navBarStore';
 import { getTodayLocal } from '../utils/date';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export function Diary() {
     const navigate = useNavigate();
-    // const { hideNavBar, showNavBar } = useNavBarStore(); // Removed: Handled by useHideNavBar hook in child components
     const { selectedDate, setSelectedDate } = useAppStore();
     const { session } = useAuthStore();
     // Added handlers for editing entries

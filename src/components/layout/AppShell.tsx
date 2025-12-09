@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useNavBarStore } from '../../stores/navBarStore';
 import { shouldUseFullScreenPages } from '../../utils/platform';
 import { BottomNav } from './BottomNav';
 

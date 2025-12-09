@@ -786,13 +786,13 @@ export function AddFood() {
                                         <>
                                             <div className="flex-1 text-white font-medium">{brand}</div>
                                             <button
-                                                onClick={() => { setEditingBrand(brand); setBrandNewName(brand); }}
+                                                onClick={() => { setEditingBrand(brand); setBrandNewName(brand || ''); }}
                                                 className="px-3 py-1.5 bg-[#2A2A2A] text-[#6B6B6B] hover:text-white rounded-lg text-xs"
                                             >
                                                 Rename
                                             </button>
                                             <button
-                                                onClick={() => handleDeleteBrand(brand)}
+                                                onClick={() => handleDeleteBrand(brand || '')}
                                                 className="px-3 py-1.5 bg-[#2A2A2A] text-red-500 hover:bg-red-500/10 rounded-lg text-xs"
                                             >
                                                 Delete

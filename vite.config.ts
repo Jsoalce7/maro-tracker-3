@@ -10,7 +10,7 @@ export default defineConfig({
     host: true, // Expose to network
     proxy: {
       '/_supaproxy': {
-        target: 'https://maro.revisioniai.com',
+        target: 'http://127.0.0.1:54331',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/_supaproxy/, ''),
       },

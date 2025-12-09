@@ -250,15 +250,49 @@ export function AddFood() {
     } else {
         if (searchView === 'results' || selectedCategory) {
             displayFoods = searchResults || [];
-            if (selectedSubCategory) {
+
+            // Handle "Other" category - show foods with no category or invalid category
+            if (selectedCategory === 'Other') {
+                const validCategories = ['Meal', 'Snack', 'Drink', 'Ingredients', 'Fruit', 'Vegetable', 'Fast Food'];
                 displayFoods = displayFoods.filter(f =>
-                    f.name.toLowerCase().includes(selectedSubCategory.toLowerCase()) ||
-                    (f.tags && f.tags.includes(selectedSubCategory)) ||
-                    (f.category === 'Ingredients' && f.ingredient_type === selectedSubCategory)
+                    !f.category ||
+                    !validCategories.includes(f.category) ||
+                    (f.tags && f.tags.includes('Other'))
                 );
             }
+
+            // Apply subcategory filter with improved tag matching
+            if (selectedSubCategory) {
+                const subCatLower = selectedSubCategory.toLowerCase();
+                displayFoods = displayFoods.filter(f => {
+                    return (
+                        // Check name
+                        f.name.toLowerCase().includes(subCatLower) ||
+                        // Check tags (exact match, case-insensitive)
+                        (f.tags && f.tags.some(tag => tag.toLowerCase() === subCatLower)) ||
+                        // Check tags (partial match)
+                        (f.tags && f.tags.some(tag => tag.toLowerCase().includes(subCatLower))) ||
+                        // Check ingredient_type for Ingredients category
+                        (f.category === 'Ingredients' && f.ingredient_type === selectedSubCategory) ||
+                        // Check category itself
+                        (f.category && f.category.toLowerCase() === subCatLower) ||
+                        // Check source
+                        (f.source && f.source.toLowerCase() === subCatLower)
+                    );
+                });
+            }
+
+            // Apply restaurant filter for Fast Food
             if (selectedCategory === 'Fast Food' && selectedRestaurant) {
                 displayFoods = displayFoods.filter(f => f.restaurant === selectedRestaurant);
+            }
+
+            // Debug logging
+            if (selectedCategory) {
+                console.log(`[Food Filter] Category: ${selectedCategory}, SubCategory: ${selectedSubCategory || 'none'}, Found: ${displayFoods.length} foods`);
+                if (displayFoods.length === 0 && !searchQuery) {
+                    console.warn('[Food Filter] No foods found! This category might be empty or filtering is too strict.');
+                }
             }
         }
     }

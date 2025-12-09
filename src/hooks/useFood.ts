@@ -10,8 +10,10 @@ export function useFood() {
 
     // Search Foods
     const searchFoods = async (query: string, categoryFilter?: string) => {
-        // If neither query nor category, return empty
-        if ((!query || query.length < 2) && (!categoryFilter || categoryFilter === 'All')) return [];
+        // Allow browsing categories without search query
+        if (!query && (!categoryFilter || categoryFilter === 'All')) return [];
+        // If searching, require at least 2 characters unless category is selected
+        if (query && query.length < 2 && (!categoryFilter || categoryFilter === 'All')) return [];
 
         let globalQuery = supabase
             .from('food_items')
@@ -40,10 +42,10 @@ export function useFood() {
         }
 
         // Apply Category/Tag Filter if provided
-        // We look in 'category' column OR 'tags' array
+        // Check both 'category' column AND 'tags' array for matches
         if (categoryFilter && categoryFilter !== 'All') {
-            // Global: Only filter by category column
-            globalQuery = globalQuery.eq('category', categoryFilter);
+            // Global: Filter by category OR tags (more permissive)
+            globalQuery = globalQuery.or(`category.eq.${categoryFilter},tags.cs.{${categoryFilter}}`);
 
             // Custom: Filter by category OR tags
             if (customQuery) {

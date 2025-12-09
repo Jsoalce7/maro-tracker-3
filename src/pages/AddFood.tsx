@@ -81,6 +81,11 @@ export function AddFood() {
     const [selectedItems, setSelectedItems] = useState<{ food: FoodItem, quantity: number, unit: string }[]>([]);
     const [showReview, setShowReview] = useState(false);
 
+    // Brand Management State
+    const [showBrandManagement, setShowBrandManagement] = useState(false);
+    const [editingBrand, setEditingBrand] = useState<string | null>(null);
+    const [brandNewName, setBrandNewName] = useState('');
+
 
     // Search Query
     const { data: searchResults } = useQuery({

@@ -32,9 +32,9 @@ const mealLabels: Record<MealType, string> = {
 
 const CATEGORIES: Record<string, string[]> = {
     'Meal': ['Breakfast', 'Lunch', 'Dinner'],
-    'Snack': ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Healthy Snacks', 'Nuts', 'Crackers'],
+    'Snack': ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar'],
     'Drink': ['Water', 'Soda', 'Coffee', 'Tea', 'Energy Drink', 'Electrolytes', 'Alcohol', 'Juice', 'Smoothie', 'Protein Shake'],
-    'Ingredients': ['Protein', 'Dairy', 'Carbs', 'Fats', 'Misc'],
+    'Ingredients': ['Protein', 'Dairy', 'Carbs', 'Fats', 'Condiments', 'Misc'],
     'Fruit': ['Fresh', 'Dried', 'Frozen'],
     'Vegetable': ['Fresh', 'Frozen', 'Canned'],
     'Fast Food': [],

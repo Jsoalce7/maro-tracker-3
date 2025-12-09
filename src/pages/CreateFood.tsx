@@ -48,7 +48,7 @@ export function CreateFood() {
         restaurant: '',
     });
 
-    const [servingUnit, setServingUnit] = useState<'g' | 'oz' | 'ml'>('g');
+    const [servingUnit, setServingUnit] = useState<'g' | 'oz' | 'ml' | 'tsp' | 'tbsp'>('g');
     const [showMicros, setShowMicros] = useState(false);
 
     // Initial Load for Edit
@@ -284,14 +284,18 @@ export function CreateFood() {
                             onChange={e => setManualForm(prev => ({ ...prev, serving_size_g: e.target.value }))}
                             className="flex-1 bg-[#141414] border border-[#2A2A2A] rounded-xl p-3 text-white text-lg focus:outline-none focus:border-[#3B82F6]"
                         />
-                        <div className="flex bg-[#141414] rounded-xl border border-[#2A2A2A] overflow-hidden">
-                            {(['g', 'oz', 'ml'] as const).map(unit => (
+                        <div className="flex gap-2 mb-4">
+                            {[{ v: 'g', l: 'g' }, { v: 'oz', l: 'oz' }, { v: 'ml', l: 'ml' }, { v: 'tsp', l: 'tsp' }, { v: 'tbsp', l: 'tbsp' }].map(unit => (
                                 <button
-                                    key={unit}
-                                    onClick={() => setServingUnit(unit)}
-                                    className={`px-4 py-3 font-medium transition-colors ${servingUnit === unit ? 'bg-[#3B82F6] text-white' : 'text-[#6B6B6B] hover:text-white'}`}
+                                    key={unit.v}
+                                    type="button"
+                                    onClick={() => setServingUnit(unit.v as any)}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${servingUnit === unit.v
+                                            ? 'bg-[#3B82F6] text-white'
+                                            : 'bg-[#2A2A2A] text-[#6B6B6B] hover:text-white'
+                                        }`}
                                 >
-                                    {unit}
+                                    {unit.l}
                                 </button>
                             ))}
                         </div>
@@ -382,7 +386,7 @@ export function CreateFood() {
                     <div>
                         <label className="text-xs text-[#6B6B6B] mb-2 block">Category (Required)</label>
                         <div className="flex flex-wrap gap-2">
-                            {['Meal', 'Snack', 'Drink', 'Ingredients', 'Fruit', 'Vegetable', 'Fast Food', 'Dessert', 'Other'].map(cat => (
+                            {['Meal', 'Snack', 'Drink', 'Ingredients', 'Fruit', 'Vegetable', 'Fast Food', 'Supplement', 'Other'].map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setManualForm(prev => ({ ...prev, category: cat }))}
@@ -399,7 +403,7 @@ export function CreateFood() {
                         <div className="animate-slide-up mt-4">
                             <label className="text-xs text-[#6B6B6B] mb-2 block">Ingredient Type</label>
                             <div className="flex flex-wrap gap-2">
-                                {['Protein', 'Dairy', 'Carbs', 'Fats', 'Misc'].map(type => (
+                                {['Protein', 'Dairy', 'Carbs', 'Fats', 'Condiments', 'Spices', 'Vegetables', 'Fruits', 'Misc'].map(type => (
                                     <button
                                         key={type}
                                         onClick={() => setManualForm(prev => ({ ...prev, ingredient_type: type }))}
@@ -452,14 +456,14 @@ export function CreateFood() {
                         <div className="animate-slide-up">
                             <label className="text-xs text-[#6B6B6B] mb-2 block">Drink Type</label>
                             <div className="flex flex-wrap gap-2">
-                                {['Water', 'Coffee', 'Tea', 'Soda', 'Energy Drink', 'Electrolytes', 'Alcohol', 'Other'].map(type => {
+                                {['Water', 'Coffee', 'Tea', 'Soda', 'Juice', 'Smoothie', 'Protein Shake', 'Energy Drink', 'Alcohol'].map(type => {
                                     const isActive = manualForm.tags.includes(type);
                                     return (
                                         <button
                                             key={type}
                                             onClick={() => {
                                                 setManualForm(prev => {
-                                                    const types = ['Water', 'Coffee', 'Tea', 'Soda', 'Energy Drink', 'Electrolytes', 'Alcohol', 'Other'];
+                                                    const types = ['Water', 'Coffee', 'Tea', 'Soda', 'Juice', 'Smoothie', 'Protein Shake', 'Energy Drink', 'Alcohol'];
                                                     const newTags = prev.tags.filter(t => !types.includes(t));
                                                     if (!isActive) newTags.push(type);
                                                     return { ...prev, tags: newTags };
@@ -480,14 +484,14 @@ export function CreateFood() {
                         <div className="animate-slide-up">
                             <label className="text-xs text-[#6B6B6B] mb-2 block">Snack Type</label>
                             <div className="flex flex-wrap gap-2">
-                                {['Chips', 'Cookies', 'Candy', 'Dessert', 'Healthy Snack', 'Fruit', 'Nut', 'Bar'].map(type => {
+                                {['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Fruit', 'Nut', 'Vegetable', 'Yogurt', 'Other'].map(type => {
                                     const isActive = manualForm.tags.includes(type);
                                     return (
                                         <button
                                             key={type}
                                             onClick={() => {
                                                 setManualForm(prev => {
-                                                    const types = ['Chips', 'Cookies', 'Candy', 'Dessert', 'Healthy Snack', 'Fruit', 'Nut', 'Bar'];
+                                                    const types = ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Fruit', 'Nut', 'Vegetable', 'Yogurt', 'Other'];
                                                     const newTags = prev.tags.filter(t => !types.includes(t));
                                                     if (!isActive) newTags.push(type);
                                                     return { ...prev, tags: newTags };

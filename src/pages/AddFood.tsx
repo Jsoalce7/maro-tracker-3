@@ -591,15 +591,94 @@ export function AddFood() {
                         <button onClick={() => setShowReview(false)} className="text-[#6B6B6B]">Close</button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                        {selectedItems.map((item, index) => (
-                            <div key={index} className="bg-[#1A1A1A] p-3 rounded-xl border border-[#2A2A2A] flex justify-between items-center">
-                                <div>
-                                    <div className="font-medium">{item.food.name}</div>
-                                    <div className="text-sm text-[#6B6B6B]">{item.quantity} {item.unit}</div>
+                        {selectedItems.map((item, index) => {
+                            // Determine available units based on food properties
+                            const isDrink = item.food.category === 'Drink' || ['oz', 'ml'].includes(item.food.serving_unit || '');
+
+                            // Calculate nutrition preview
+                            const qty = item.quantity;
+                            let quantityInGrams = qty;
+                            if (item.unit === 'serving') {
+                                quantityInGrams = qty * (item.food.serving_size_g || 100);
+                            } else if (item.unit === 'oz') {
+                                quantityInGrams = qty * 28.3495;
+                            } else if (item.unit === 'ml') {
+                                quantityInGrams = qty;
+                            }
+                            const ratio = quantityInGrams / 100;
+                            const calories = Math.round((item.food.calories_per_100g || 0) * ratio);
+
+                            return (
+                                <div key={index} className="bg-[#1A1A1A] rounded-xl border border-[#2A2A2A] overflow-hidden">
+                                    {/* Food Info */}
+                                    <div className="p-3 border-b border-[#2A2A2A] flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <div className="font-medium text-white">{item.food.name}</div>
+                                            {item.food.brand && (
+                                                <div className="text-xs text-[#6B6B6B] mt-0.5">{item.food.brand}</div>
+                                            )}
+                                            <div className="text-sm text-[#3B82F6] mt-1">{calories} cal</div>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== index))}
+                                            className="text-[#6B6B6B] hover:text-red-500 p-1"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    {/* Serving Size Adjustment */}
+                                    <div className="p-3">
+                                        <div className="text-xs text-[#6B6B6B] mb-2">Serving Size</div>
+                                        <div className="flex bg-[#0A0A0A] rounded-lg border border-[#2A2A2A] overflow-hidden">
+                                            {/* Quantity Input */}
+                                            <div className="flex-1 flex items-center px-3 border-r border-[#2A2A2A]">
+                                                <input
+                                                    type="number"
+                                                    value={item.quantity}
+                                                    onChange={e => {
+                                                        const newQty = parseFloat(e.target.value) || 0;
+                                                        setSelectedItems(prev => prev.map((it, i) =>
+                                                            i === index ? { ...it, quantity: newQty } : it
+                                                        ));
+                                                    }}
+                                                    className="bg-transparent text-white text-base w-full focus:outline-none text-center"
+                                                    placeholder="1"
+                                                    step="0.1"
+                                                />
+                                            </div>
+
+                                            {/* Unit Selector */}
+                                            <div className="flex-1">
+                                                <select
+                                                    value={item.unit}
+                                                    onChange={e => {
+                                                        setSelectedItems(prev => prev.map((it, i) =>
+                                                            i === index ? { ...it, unit: e.target.value } : it
+                                                        ));
+                                                    }}
+                                                    className="bg-transparent text-[#6B6B6B] text-sm font-medium focus:outline-none py-3 px-2 w-full appearance-none cursor-pointer"
+                                                >
+                                                    <option value="serving">servings</option>
+                                                    <option value="g">grams (g)</option>
+                                                    {isDrink && (
+                                                        <>
+                                                            <option value="oz">oz</option>
+                                                            <option value="ml">ml</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            {/* Grams Display */}
+                                            <div className="px-3 py-3 text-[#6B6B6B] text-xs bg-[#141414] min-w-[70px] text-center border-l border-[#2A2A2A]">
+                                                = {formatQuantity(quantityInGrams)} g
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== index))} className="text-[#6B6B6B] hover:text-red-500">✕</button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="p-4 border-t border-[#2A2A2A] bg-[#141414] pb-safe-bottom">
                         <button onClick={handleAddMulti} className="w-full bg-[#3B82F6] text-white font-bold py-3.5 rounded-xl">

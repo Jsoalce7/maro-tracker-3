@@ -202,7 +202,7 @@ export function RecipeBuilder({ onClose, onSave, initialRecipe }: RecipeBuilderP
                                 <button
                                     key={cat}
                                     onClick={() => setCategory(cat)}
-                                    className={`px - 3 py - 1.5 rounded - full text - xs font - medium transition - colors ${ category === cat ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white' } `}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${ category === cat ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white' } `}
                                 >
                                     {cat}
                                 </button>
@@ -218,7 +218,7 @@ export function RecipeBuilder({ onClose, onSave, initialRecipe }: RecipeBuilderP
                                 <button
                                     key={src}
                                     onClick={() => setSource(src)}
-                                    className={`px - 3 py - 1.5 rounded - full text - xs font - medium transition - colors ${ source === src ? 'bg-[#10B981] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white' } `} >
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${ source === src ? 'bg-[#10B981] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white' } `} >
                                     {src}
                                 </button>
                             ))}
@@ -233,7 +233,7 @@ export function RecipeBuilder({ onClose, onSave, initialRecipe }: RecipeBuilderP
                                 <button
                                     key={lvl}
                                     onClick={() => setProcessingLevel(lvl)}
-                                    className={`px - 3 py - 1.5 rounded - full text - xs font - medium transition - colors ${ processingLevel === lvl ? 'bg-[#F59E0B] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white' } `} >
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${ processingLevel === lvl ? 'bg-[#F59E0B] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white' } `} >
                                     {lvl}
                                 </button>
                             ))}

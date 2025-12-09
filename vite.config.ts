@@ -5,9 +5,10 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), basicSsl()],
+  plugins: [react(), tailwindcss()],
   server: {
     host: true, // Expose to network
+    allowedHosts: ['maro.revisioniai.com'],
     proxy: {
       '/_supaproxy': {
         target: 'http://127.0.0.1:54331',

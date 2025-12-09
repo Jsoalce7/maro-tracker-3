@@ -9,7 +9,11 @@ const supabaseUrl = isDevelopment
     ? `${origin}/_supaproxy`
     : 'https://nwdepfzbbfatbqzgsjnn.supabase.co';
 
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53ZGVwZnpiYmZhdGJxemdzan5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIxNDY2NjAsImV4cCI6MjA0NzcyMjY2MH0.HmvgqO-mTtFMfF6Xai3uAIL0bKNl0dB7D0XNJF2nzBk';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase configuration. Please set VITE_SUPABASE_ANON_KEY environment variable.');
+}
 
 const cfClientId = import.meta.env.VITE_CF_CLIENT_ID;
 const cfClientSecret = import.meta.env.VITE_CF_CLIENT_SECRET;

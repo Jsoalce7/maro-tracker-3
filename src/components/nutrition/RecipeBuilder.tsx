@@ -1,4 +1,3 @@
-```
 import React, { useState } from 'react';
 import { useFood } from '../../hooks/useFood';
 import { useRecipes } from '../../hooks/useRecipes';

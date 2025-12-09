@@ -52,14 +52,14 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           {/* Main Layout (With Layout & BottomNav) */}
-          <Route element={<RequireAuth withShell={true}><div /></RequireAuth>}>
+          <Route element={<RequireAuth withShell={true}><Outlet /></RequireAuth>}>
             <Route path="/" element={<Home />} />
             <Route path="/diary" element={<Diary />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* Full Screen Layout (No BottomNav) */}
-          <Route element={<RequireAuth withShell={false}><div /></RequireAuth>}>
+          <Route element={<RequireAuth withShell={false}><Outlet /></RequireAuth>}>
             <Route path="/add-food" element={<AddFood />} />
             <Route path="/log-water" element={<LogWater />} />
             <Route path="/create-food" element={<CreateFood />} />

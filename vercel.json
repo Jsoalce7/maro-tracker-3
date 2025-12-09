@@ -6,7 +6,7 @@
     "rewrites": [
         {
             "source": "/_supaproxy/:match*",
-            "destination": "https://maro.revisioniai.com/:match*"
+            "destination": "https://maro.revisioniai.com/_supaproxy/:match*"
         },
         {
             "source": "/(.*)",

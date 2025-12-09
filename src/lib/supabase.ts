@@ -5,10 +5,20 @@ const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
 // Use direct Supabase URL in production, proxy in development or tunnel
 // We treat maro.revisioniai.com as development because it proxies to local Vite
-const usesLocalProxy = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('revisioniai.com');
-const supabaseUrl = usesLocalProxy
+const usesLocalProxy =
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.includes('revisioniai.com') ||
+    (origin.includes('vercel.app') && import.meta.env.VITE_SUPABASE_URL?.includes('revisioniai.com'));
+
+let supabaseUrl = usesLocalProxy
     ? `${origin}/_supaproxy`
     : import.meta.env.VITE_SUPABASE_URL;
+
+// Enforce HTTPS if not on localhost to prevent Mixed Content errors
+if (supabaseUrl && !supabaseUrl.startsWith('http://localhost') && !supabaseUrl.startsWith('http://127.0.0.1') && supabaseUrl.startsWith('http://')) {
+    supabaseUrl = supabaseUrl.replace('http://', 'https://');
+}
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 

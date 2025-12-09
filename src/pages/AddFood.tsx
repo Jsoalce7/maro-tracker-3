@@ -316,12 +316,12 @@ export function AddFood() {
 
             // Apply restaurant filter for Fast Food
             if (selectedCategory === 'Fast Food' && selectedRestaurant) {
-                displayFoods = displayFoods.filter(f => f.restaurant === selectedRestaurant);
+                displayFoods = displayFoods.filter(f => (f.restaurant || 'Other') === selectedRestaurant);
             }
 
             // Debug logging
             if (selectedCategory) {
-                console.log(`[Food Filter] Category: ${selectedCategory}, SubCategory: ${selectedSubCategory || 'none'}, Found: ${displayFoods.length} foods`);
+                console.log(`[Food Filter] Category: ${selectedCategory}, SubCategory: ${selectedSubCategory || 'none'}, Restaurant: ${selectedRestaurant || 'none'}, Found: ${displayFoods.length} foods`);
                 if (displayFoods.length === 0 && !searchQuery) {
                     console.warn('[Food Filter] No foods found! This category might be empty or filtering is too strict.');
                 }
@@ -522,6 +522,33 @@ export function AddFood() {
                         {/* Normal Categories */}
                         {selectedCategory && !['Favorites', 'My Meals'].includes(selectedCategory) && (
                             <>
+                                {/* Fast Food - Restaurant List (shown first) */}
+                                {selectedCategory === 'Fast Food' && !selectedRestaurant && (() => {
+                                    // Get unique restaurants from displayFoods
+                                    const restaurants = [...new Set(displayFoods.map(f => f.restaurant || 'Other'))].sort();
+
+                                    return (
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-[#6B6B6B] mb-3 px-1">Select a restaurant:</div>
+                                            {restaurants.map(restaurant => {
+                                                const itemCount = displayFoods.filter(f => (f.restaurant || 'Other') === restaurant).length;
+                                                return (
+                                                    <button
+                                                        key={restaurant}
+                                                        onClick={() => setSelectedRestaurant(restaurant)}
+                                                        className="w-full text-left p-4 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#222] transition-colors"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="font-medium text-white">{restaurant}</div>
+                                                            <div className="text-xs text-[#6B6B6B]">{itemCount} items</div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Sub Cats */}
                                 {selectedCategory !== 'Fast Food' && CATEGORIES[selectedCategory]?.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mb-6 px-1">
@@ -532,27 +559,29 @@ export function AddFood() {
                                     </div>
                                 )}
 
-                                {/* Results */}
-                                <div className="space-y-1">
-                                    {displayFoods.map(food => (
-                                        <button key={food.id} onClick={() => handleSelectFood(food)}
-                                            className={`w-full text-left p-3 rounded-xl transition-all border ${isMultiSelect && selectedItems.some(i => i.food.id === food.id) ? 'bg-[#3B82F6]/20 border-[#3B82F6]' : (selectedFood?.id === food.id ? 'bg-[#3B82F6]/10 border-[#3B82F6]' : 'bg-transparent border-transparent hover:bg-[#1A1A1A]')}`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-medium">{food.name}</div>
-                                                    <div className="text-xs text-[#6B6B6B]">{food.brand} • {formatCalories(food.calories_per_100g)} kcal</div>
-                                                </div>
-                                                {isMultiSelect && (
-                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedItems.some(i => i.food.id === food.id) ? 'bg-[#3B82F6] border-[#3B82F6]' : 'border-[#6B6B6B]'}`}>
-                                                        {selectedItems.some(i => i.food.id === food.id) && <span className="text-white text-xs">✓</span>}
+                                {/* Results - Only show if not Fast Food or if restaurant is selected */}
+                                {!(selectedCategory === 'Fast Food' && !selectedRestaurant) && (
+                                    <div className="space-y-1">
+                                        {displayFoods.map(food => (
+                                            <button key={food.id} onClick={() => handleSelectFood(food)}
+                                                className={`w-full text-left p-3 rounded-xl transition-all border ${isMultiSelect && selectedItems.some(i => i.food.id === food.id) ? 'bg-[#3B82F6]/20 border-[#3B82F6]' : (selectedFood?.id === food.id ? 'bg-[#3B82F6]/10 border-[#3B82F6]' : 'bg-transparent border-transparent hover:bg-[#1A1A1A]')}`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="font-medium">{food.name}</div>
+                                                        <div className="text-xs text-[#6B6B6B]">{food.brand} • {formatCalories(food.calories_per_100g)} kcal</div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </button>
-                                    ))}
-                                    {displayFoods.length === 0 && <div className="text-center text-[#6B6B6B] py-8">No results</div>}
-                                </div>
+                                                    {isMultiSelect && (
+                                                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedItems.some(i => i.food.id === food.id) ? 'bg-[#3B82F6] border-[#3B82F6]' : 'border-[#6B6B6B]'}`}>
+                                                            {selectedItems.some(i => i.food.id === food.id) && <span className="text-white text-xs">✓</span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </button>
+                                        ))}
+                                        {displayFoods.length === 0 && <div className="text-center text-[#6B6B6B] py-8">No results</div>}
+                                    </div>
+                                )}
                             </>
                         )}
 

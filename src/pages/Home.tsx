@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { EditEntryModal } from '../components/nutrition/EditEntryModal';
-import { FoodDatabaseModal } from '../components/profile/FoodDatabaseModal'; // Import Manager
 import { MealCard } from '../components/nutrition/MealCard';
 import { DailyNutritionCard } from '../components/nutrition/DailyNutritionCard';
 import { useAppStore } from '../stores/appStore';
@@ -18,7 +17,6 @@ export function Home() {
 
     // Added state for meal selector
     const [showMealSelector, setShowMealSelector] = useState(false);
-    const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
 
     // Data Hooks
     const { targets } = useProfile();
@@ -249,16 +247,6 @@ export function Home() {
                     onDelete={(ids) => {
                         ids.forEach(id => deleteEntry(id));
                         setEditingEntries(null);
-                    }}
-                    onEditFoodData={(foodId) => setEditingFoodId(foodId)}
-                />
-            )}
-
-            {editingFoodId && (
-                <FoodDatabaseModal
-                    initialFoodId={editingFoodId}
-                    onClose={() => {
-                        setEditingFoodId(null);
                     }}
                 />
             )}

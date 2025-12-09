@@ -4,7 +4,6 @@ import { MonthCalendar } from '../components/calendar/MonthCalendar';
 import { Card, CardHeader } from '../components/ui/Card';
 import { MealCard } from '../components/nutrition/MealCard';
 import { EditEntryModal } from '../components/nutrition/EditEntryModal';
-import { FoodDatabaseModal } from '../components/profile/FoodDatabaseModal';
 import { useAppStore } from '../stores/appStore';
 import { useProfile } from '../hooks/useProfile'; // Used implicitly via auth store in hooks
 import { useAuthStore } from '../stores/authStore';
@@ -25,7 +24,6 @@ export function Diary() {
     const { session } = useAuthStore();
     // Added handlers for editing entries
     const [editingEntries, setEditingEntries] = useState<FoodEntry[] | null>(null);
-    const [editingFoodId, setEditingFoodId] = useState<string | null>(null);
     const [showMealSelector, setShowMealSelector] = useState(false);
 
     // Fetch data for selected date
@@ -311,21 +309,10 @@ export function Diary() {
                         ids.forEach(id => deleteEntry(id));
                         setEditingEntries(null);
                     }}
-                    onEditFoodData={(foodId) => {
-                        setEditingFoodId(foodId);
-                    }}
                 />
             )}
 
-            {editingFoodId && (
-                <FoodDatabaseModal
-                    initialFoodId={editingFoodId}
-                    onClose={() => {
-                        setEditingFoodId(null);
-                    }}
-                />
-            )}
+
         </div>
     );
 }
-

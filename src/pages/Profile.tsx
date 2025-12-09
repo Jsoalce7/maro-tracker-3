@@ -7,7 +7,6 @@ import { calculateBMI, calculateBMR, calculateTDEE } from '../lib/calculations';
 import { UserProfile } from '../types';
 import { SettingsMenu } from '../components/profile/SettingsMenu';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
-import { FoodDatabaseModal } from '../components/profile/FoodDatabaseModal';
 
 import { useNavigate } from 'react-router-dom';
 

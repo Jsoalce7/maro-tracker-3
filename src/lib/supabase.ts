@@ -3,16 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 // Get origin - on Vercel this will be the deployment URL
 const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-// Use direct Supabase URL in production, proxy in development
-const isDevelopment = origin.includes('localhost') || origin.includes('127.0.0.1');
-const supabaseUrl = isDevelopment
+// Use direct Supabase URL in production, proxy in development or tunnel
+// We treat maro.revisioniai.com as development because it proxies to local Vite
+const usesLocalProxy = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('revisioniai.com');
+const supabaseUrl = usesLocalProxy
     ? `${origin}/_supaproxy`
-    : 'https://nwdepfzbbfatbqzgsjnn.supabase.co';
+    : import.meta.env.VITE_SUPABASE_URL;
 
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase configuration. Please set VITE_SUPABASE_ANON_KEY environment variable.');
+    if (!usesLocalProxy) {
+        console.error('Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+    }
 }
 
 const cfClientId = import.meta.env.VITE_CF_CLIENT_ID;

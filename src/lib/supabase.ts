@@ -1,18 +1,23 @@
+```javascript
 import { createClient } from '@supabase/supabase-js';
 
 // Use proxy path to bypass CORS/Cloudflare restrictions
-// construct absolute URL because supabase-js requires valid http/https prefix
-const isBrowser = typeof window !== 'undefined';
-const origin = isBrowser ? window.location.origin : '';
-const supabaseUrl = `${origin}/_supaproxy`;
+// Get origin - on Vercel this will be the deployment URL
+const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-// We still check for the env var to ensure configuration exists, but we use the proxy path in the client
-const remoteUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use direct Supabase URL in production, proxy in development
+const isDevelopment = origin.includes('localhost') || origin.includes('127.0.0.1');
+const supabaseUrl = isDevelopment 
+  ? `${ origin }/_supaproxy`
+  : 'https://nwdepfzbbfatbqzgsjnn.supabase.co';
 
-if (!remoteUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
-}
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+
+// The remoteUrl check is no longer needed as supabaseUrl is determined dynamically
+// and supabaseAnonKey has a fallback.
+// if (!remoteUrl || !supabaseAnonKey) {
+//     throw new Error('Missing Supabase environment variables');
+// }
 
 const cfClientId = import.meta.env.VITE_CF_CLIENT_ID;
 const cfClientSecret = import.meta.env.VITE_CF_CLIENT_SECRET;

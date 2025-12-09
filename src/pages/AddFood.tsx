@@ -545,16 +545,22 @@ export function AddFood() {
                             <select value={servingUnit} onChange={e => setServingUnit(e.target.value)} className="bg-transparent text-[#6B6B6B] text-sm font-medium focus:outline-none py-2 pl-2 pr-1 appearance-none cursor-pointer">
                                 <option value="serving">servings</option>
                                 <option value="g">grams (g)</option>
-                                {(selectedFood.category === 'Drink' || ['oz', 'ml'].includes(selectedFood.serving_unit || '')) && (
+                                {(selectedFood.category === 'Drink' || ['oz', 'ml', 'tsp', 'tbsp'].includes(selectedFood.serving_unit || '')) && (
                                     <>
                                         <option value="oz">oz</option>
                                         <option value="ml">ml</option>
+                                        {['tsp', 'tbsp'].includes(selectedFood.serving_unit || '') && (
+                                            <>
+                                                <option value="tsp">tsp</option>
+                                                <option value="tbsp">tbsp</option>
+                                            </>
+                                        )}
                                     </>
                                 )}
                             </select>
                         </div>
                         <div className="px-4 py-3 text-[#6B6B6B] text-sm font-medium flex items-center bg-[#141414] min-w-[80px] justify-center">
-                            = {formatQuantity(parseFloat(quantity || '0') * (servingUnit === 'serving' ? (selectedFood.serving_size_g || 100) : (servingUnit === 'oz' ? 28.35 : 1)))} g
+                            = {formatQuantity(parseFloat(quantity || '0') * (servingUnit === 'serving' ? (selectedFood.serving_size_g || 100) : (servingUnit === 'oz' ? 28.35 : servingUnit === 'tsp' ? 4.93 : servingUnit === 'tbsp' ? 14.79 : 1)))} {selectedFood.category === 'Drink' ? 'ml' : 'g'}
                         </div>
                     </div>
 

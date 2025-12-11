@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { EditEntryModal } from '../components/nutrition/EditEntryModal';
-import { MealCard } from '../components/nutrition/MealCard';
+import { CompactMealCard } from '../components/nutrition/CompactMealCard';
 import { DailyNutritionCard } from '../components/nutrition/DailyNutritionCard';
 import { useAppStore } from '../stores/appStore';
 import { useProfile } from '../hooks/useProfile';
@@ -142,32 +142,39 @@ export function Home() {
 
             {/* Main Content */}
             <div className="px-4 space-y-4 pb-32">
-                {/* Daily Nutrition Card */}
-                <DailyNutritionCard
-                    calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
-                    protein={{ consumed: totals.protein, target: currentTargets.protein_g }}
-                    fat={{ consumed: totals.fat, target: currentTargets.fat_g }}
-                    carbs={{ consumed: totals.carbs, target: currentTargets.carbs_g }}
-                    water={totals.water}
-                    caffeine={totals.caffeine}
-                />
+                {/* Content Grid: Daily Nutrition + Meals */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Col 1: Daily Nutrition Card */}
+                    <div className="w-full">
+                        <DailyNutritionCard
+                            calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
+                            protein={{ consumed: totals.protein, target: currentTargets.protein_g }}
+                            fat={{ consumed: totals.fat, target: currentTargets.fat_g }}
+                            carbs={{ consumed: totals.carbs, target: currentTargets.carbs_g }}
+                            water={totals.water}
+                            caffeine={totals.caffeine}
+                        />
+                    </div>
 
-                {/* Meals Section */}
-                <section className="space-y-3">
-                    <h2 className="text-lg font-semibold text-white">Meals</h2>
-                    {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                        entries[mealType].length > 0 && (
-                            <MealCard
-                                key={mealType}
-                                type={mealType}
-                                entries={entries[mealType]}
-                                totalCalories={getMealCalories(mealType)}
-                                onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                                onEditEntry={handleEditGroup}
-                            />
-                        )
-                    ))}
-                </section>
+                    {/* Col 2: Meals Section */}
+                    <section className="space-y-3">
+                        <h2 className="text-lg font-semibold text-white">Meals</h2>
+
+                        {/* Meals Grid: 2x2 on all screens */}
+                        <div className="grid grid-cols-2 gap-3 md:gap-4">
+                            {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
+                                <CompactMealCard
+                                    key={mealType}
+                                    type={mealType}
+                                    entries={entries[mealType]}
+                                    totalCalories={getMealCalories(mealType)}
+                                    onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
+                                    onEditEntry={handleEditGroup}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                </div>
             </div>
 
             {/* Meal Selector Modal */}

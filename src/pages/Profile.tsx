@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -7,6 +8,7 @@ import { calculateBMI, calculateBMR, calculateTDEE } from '../lib/calculations';
 import { UserProfile } from '../types';
 import { SettingsMenu } from '../components/profile/SettingsMenu';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
+import { WeightCard } from '../components/weight/WeightCard';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -145,6 +147,9 @@ export function Profile() {
                 </div>
             </Card>
 
+            {/* Weight Tracking */}
+            <WeightCard />
+
             {/* Calculated Stats (Read Only) */}
             <Card>
                 <CardHeader title="Your Stats" subtitle="Auto-calculated" />
@@ -235,13 +240,13 @@ export function Profile() {
                                     <div className="flex gap-2 mb-4">
                                         <button
                                             onClick={() => setIsSignUp(false)}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${!isSignUp ? 'bg-[#3B82F6] text-white' : 'bg-[#242424] text-[#6B6B6B]'}`}
+                                            className={`flex - 1 py - 2 rounded - lg text - sm font - medium transition - colors ${!isSignUp ? 'bg-[#3B82F6] text-white' : 'bg-[#242424] text-[#6B6B6B]'} `}
                                         >
                                             Sign In
                                         </button>
                                         <button
                                             onClick={() => setIsSignUp(true)}
-                                            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${isSignUp ? 'bg-[#3B82F6] text-white' : 'bg-[#242424] text-[#6B6B6B]'}`}
+                                            className={`flex - 1 py - 2 rounded - lg text - sm font - medium transition - colors ${isSignUp ? 'bg-[#3B82F6] text-white' : 'bg-[#242424] text-[#6B6B6B]'} `}
                                         >
                                             Sign Up
                                         </button>

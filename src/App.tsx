@@ -9,6 +9,7 @@ import { LogWater } from './pages/LogWater';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
 import { CreateFood } from './pages/CreateFood';
+import { WorkoutSession } from './pages/WorkoutSession';
 import { CreateRecipe } from './pages/CreateRecipe';
 import { useAuthStore } from './stores/authStore';
 
@@ -56,12 +57,14 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/diary" element={<Diary />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/log-water" element={<LogWater />} /> {/* Moved from Full Screen Layout */}
           </Route>
 
           {/* Full Screen Layout (No BottomNav) */}
           <Route element={<RequireAuth withShell={false}><Outlet /></RequireAuth>}>
+            <Route path="/workout/session/:sessionId" element={<WorkoutSession />} /> {/* Full-screen workout */}
             <Route path="/add-food" element={<AddFood />} />
-            <Route path="/log-water" element={<LogWater />} />
+            {/* <Route path="/log-water" element={<LogWater />} /> Removed from here */}
             <Route path="/create-food" element={<CreateFood />} />
             <Route path="/create-recipe" element={<CreateRecipe />} />
           </Route>

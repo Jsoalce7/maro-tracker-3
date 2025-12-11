@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MonthCalendar } from '../components/calendar/MonthCalendar';
 import { Card, CardHeader } from '../components/ui/Card';
 import { MealCard } from '../components/nutrition/MealCard';
 import { EditEntryModal } from '../components/nutrition/EditEntryModal';
 import { useAppStore } from '../stores/appStore';
-import { useProfile } from '../hooks/useProfile'; // Used implicitly via auth store in hooks
+import { useProfile } from '../hooks/useProfile';
 import { useAuthStore } from '../stores/authStore';
 import { useNutrition } from '../hooks/useNutrition';
 import { useWater } from '../hooks/useWater';
@@ -13,18 +13,46 @@ import { supabase } from '../lib/supabase';
 import { MealType, FoodEntry, FoodItem } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { getTodayLocal } from '../utils/date';
+import { CompactWeightCard } from '../components/weight/CompactWeightCard';
+import { CompactMealCard } from '../components/nutrition/CompactMealCard';
+import { DiaryMealsSummaryCard } from '../components/diary/DiaryMealsSummaryCard';
+import { DiaryWorkoutCard } from '../components/diary/DiaryWorkoutCard';
+import { DiaryMedicationCard } from '../components/diary/DiaryMedicationCard';
+import { DiaryVitalsCard } from '../components/diary/DiaryVitalsCard';
+import { CardDetailModal } from '../components/diary/CardDetailModal';
+
+// New Imports
+import { GlobalActionModal } from '../components/navigation/GlobalActionModal';
+import { StartWorkoutModal } from '../components/workout/StartWorkoutModal';
+import { WorkoutManager } from '../components/workout/WorkoutManager';
+import { workoutService } from '../services/workoutService';
+
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export function Diary() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { selectedDate, setSelectedDate } = useAppStore();
     const { session } = useAuthStore();
     // Added handlers for editing entries
     const [editingEntries, setEditingEntries] = useState<FoodEntry[] | null>(null);
     const [showMealSelector, setShowMealSelector] = useState(false);
 
-    // Fetch data for selected date
+    // New Modal States
+    const [showStartWorkout, setShowStartWorkout] = useState(false);
+    const [showWorkoutManager, setShowWorkoutManager] = useState(false);
+
+    // Fetch profile targets
+    const { targets } = useProfile();
+    const currentTargets = targets || {
+        calories_per_day: 2000,
+        protein_g: 150,
+        carbs_g: 200,
+        fat_g: 70,
+        bmr: 0,
+        tdee: 0
+    };
     const { dayLog, deleteEntry, updateEntry, isLoading } = useNutrition(selectedDate);
     const { waterLogs, totalWaterMl } = useWater(selectedDate);
 
@@ -46,6 +74,18 @@ export function Diary() {
         },
         enabled: !!session?.user?.id
     });
+
+    // Fetch active session for Modal Logic
+    const { data: workoutData = { sessions: [], scheduled: [] } } = useQuery({
+        queryKey: ['workouts', selectedDate, session?.user?.id],
+        queryFn: () => {
+            if (!session?.user?.id) return { sessions: [], scheduled: [] };
+            return workoutService.getWorkoutsForDate(session.user.id, selectedDate);
+        },
+        enabled: !!session?.user?.id
+    });
+    const activeSession = workoutData.sessions[0]; // For passing to modals
+
 
     // Derived entries from daylog
     const entries = useMemo(() => {
@@ -138,13 +178,54 @@ export function Diary() {
         });
     };
 
+    // State for Meal Row Visibility (Persistent)
+    const [showMeals, setShowMeals] = useState(() => {
+        const saved = localStorage.getItem('diaryMealsCollapsed');
+        // Default to true (expanded) if not set or if set to 'false' (meaning NOT collapsed, so expanded)
+        // User logic: "diaryMealsCollapsed = true/false".
+        // If key exists and is 'true', then we are collapsed (showMeals = false).
+        // If key is 'false' or missing, we are expanded (showMeals = true).
+        if (saved === 'true') return false;
+        return true;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('diaryMealsCollapsed', (!showMeals).toString());
+    }, [showMeals]);
+
+    // Detail State for Mobile/Tablet
+    const [activeDetail, setActiveDetail] = useState<'meals' | 'workout' | 'medication' | 'vitals' | null>(null);
+
+    // --- Components Pre-Instantiated (Reuse) ---
+    // We create "Compact" versions (with override) and "Standard" versions/Modal versions (forced expanded)
+
+    // 1. Config for "Click to Expand" behavior (Mobile/Tablet)
+    const handleCardClick = (type: 'meals' | 'workout' | 'medication' | 'vitals') => {
+        // Only trigger modal on non-desktop (we'll control this via layout visibility, 
+        // effectively we render the "Compact" card which has the override on smaller screens).
+        setActiveDetail(type);
+    };
+
+    // Card Instances
+
+    // A. Components for Dashboard (Desktop) & Modal (Detail)
+    // - Desktop: Standard behavior (collapsible internally, starts expanded/collapsed based on persistent state) OR always expanded?
+    // User said: "Desktop ... keep current behavior (expanded card in place)". So undefined forceExpanded.
+
+    // B. Components for Mobile/Tablet Grid (Compacts)
+    // - Force collapsed (visually compact)? Actually user said "Compact mode by default: show title... do NOT render full details".
+    // Since our cards "Collapsed" state IS the compact view, we just need to ensure they start collapsed and toggle opens modal.
+    // We pass `forceExpanded={false}` to force them to STAY collapsed visually, and `onClickOverride` to open modal.
+
+    // Let's render the specific layouts directly in the JSX to keep it clear.
+
     return (
         <div className="min-h-screen bg-[#050505] page-container pb-32">
             {/* Header */}
-            <header className="px-4 py-2 mb-3 flex items-center justify-between safe-top">
+            <header className="px-4 md:px-6 py-2 mb-3 flex items-center justify-between safe-top">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Diary</h1>
-                    <p className="text-[#6B6B6B] text-sm">View and edit past entries</p>
+                    <p className="text-[#6B6B6B] text-sm">View and edit today's logs</p>
                 </div>
                 <button
                     onClick={() => setShowMealSelector(true)}
@@ -156,146 +237,147 @@ export function Diary() {
                 </button>
             </header>
 
-            {/* Responsive Layout */}
-            <div className="flex flex-col sm:flex-row sm:gap-4 lg:gap-6 sm:items-start">
-                <div className="sm:w-64 md:w-72 lg:w-80 sm:flex-shrink-0 mb-4 sm:mb-0 sm:sticky sm:top-4">
-                    <MonthCalendar
-                        selectedDate={selectedDate}
-                        onSelectDate={setSelectedDate}
-                        loggedDates={loggedDates}
+            <div className="px-4 md:px-6">
+
+                {/* --- LAYOUT 1: Mobile Stack (<768px) --- */}
+                <div className="block md:hidden space-y-4">
+                    {/* 1. Calendar + Weight (Top on Mobile) */}
+                    <Card className="p-4"><MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} /></Card>
+                    <CompactWeightCard />
+
+                    {/* 2. Summaries */}
+                    <DiaryMealsSummaryCard
+                        entries={entries} totals={totals}
+                        targets={{ calories: currentTargets.calories_per_day, protein: currentTargets.protein_g, carbs: currentTargets.carbs_g, fat: currentTargets.fat_g }}
+                        onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
+                        forceExpanded={false}
+                        onClickOverride={() => setActiveDetail('meals')}
                     />
+                    <DiaryWorkoutCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('workout')} />
+                    <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} />
+                    <DiaryVitalsCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('vitals')} />
                 </div>
 
-                <div className="flex-1 space-y-4">
-                    <Card>
-                        <CardHeader
-                            title={formatSelectedDate()}
-                            subtitle={selectedDate}
+                {/* --- LAYOUT 2: Tablet / Small Desktop (768px - 1100px) --- */}
+                <div className="hidden md:grid lg:hidden grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Col 1: Calendar + Weight */}
+                    <div className="col-span-1 space-y-6">
+                        <Card className="p-4"><MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} /></Card>
+                        <CompactWeightCard />
+                    </div>
+                    {/* Col 2 (Span 2): Vertical Stack of Summary Cards */}
+                    <div className="col-span-2 flex flex-col gap-4">
+                        <DiaryMealsSummaryCard
+                            entries={entries} totals={totals}
+                            targets={{ calories: currentTargets.calories_per_day, protein: currentTargets.protein_g, carbs: currentTargets.carbs_g, fat: currentTargets.fat_g }}
+                            onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
+                            forceExpanded={false}
+                            onClickOverride={() => setActiveDetail('meals')}
                         />
-                        {/* Quick Stats - kept same */}
-                        <div className="grid grid-cols-4 gap-2 mt-3">
-                            <div className="bg-[#141414] rounded-lg p-2 text-center">
-                                <p className="text-base font-bold text-[#3B82F6]">{Math.round(totals.calories)}</p>
-                                <p className="text-[10px] text-[#6B6B6B]">kcal</p>
-                            </div>
-                            <div className="bg-[#141414] rounded-lg p-2 text-center">
-                                <p className="text-base font-bold text-[#EF4444]">{Math.round(totals.protein)}g</p>
-                                <p className="text-[10px] text-[#6B6B6B]">Protein</p>
-                            </div>
-                            <div className="bg-[#141414] rounded-lg p-2 text-center">
-                                <p className="text-base font-bold text-[#10B981]">{Math.round(totals.carbs)}g</p>
-                                <p className="text-[10px] text-[#6B6B6B]">Carbs</p>
-                            </div>
-                            <div className="bg-[#141414] rounded-lg p-2 text-center">
-                                <p className="text-base font-bold text-[#F59E0B]">{Math.round(totals.fat)}g</p>
-                                <p className="text-[10px] text-[#6B6B6B]">Fat</p>
-                            </div>
-                        </div>
-                        {/* Secondary Stats */}
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div className="bg-[#141414] rounded-lg p-2 flex justify-between items-center px-4 border border-[#2A2A2A]">
-                                <div className="text-[10px] text-[#6B6B6B]">Water</div>
-                                <div className="text-sm font-bold text-blue-400">{Math.round(totals.water)}ml</div>
-                            </div>
-                            <div className="bg-[#141414] rounded-lg p-2 flex justify-between items-center px-4 border border-[#2A2A2A]">
-                                <div className="text-[10px] text-[#6B6B6B]">Caffeine</div>
-                                <div className="text-sm font-bold text-amber-500">{Math.round(totals.caffeine)}mg</div>
-                            </div>
-                        </div>
-                    </Card>
-
-                    <section className="space-y-3">
-                        <h2 className="text-base font-semibold text-white">Meals</h2>
-                        {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                            entries[mealType].length > 0 && (
-                                <MealCard
-                                    key={mealType}
-                                    type={mealType}
-                                    entries={entries[mealType]}
-                                    totalCalories={getMealCalories(mealType)}
-                                    onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                                    onEditEntry={handleEditEntry}
-                                />
-                            )
-                        ))}
-                    </section>
-                </div>
-            </div>
-
-            {/* Meal Selector Modal */}
-            {showMealSelector && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMealSelector(false)} />
-                    <div className="relative z-10 bg-[#141414] w-full max-w-sm rounded-2xl p-5 space-y-3 border border-[#2A2A2A] animate-slide-up">
-                        <h3 className="text-white font-bold text-center text-lg mb-2">Add Food</h3>
-                        {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map(type => (
-                            <button
-                                key={type}
-                                onClick={() => openAddFood(type)}
-                                className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group"
-                            >
-                                <span className="capitalize font-medium text-white">{type}</span>
-                                <span className="text-[#6B6B6B] group-hover:text-white">+ Add</span>
-                            </button>
-                        ))}
-
-                        <button
-                            onClick={() => {
-                                setShowMealSelector(false);
-                                navigate('/log-water');
-                            }}
-                            className="w-full text-left p-4 rounded-xl bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/50 transition-colors flex items-center justify-between group mt-2"
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-blue-400">💧</span>
-                                <span className="font-medium text-blue-100">Log Water</span>
-                            </div>
-                            <span className="text-blue-400">+ Add</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setShowMealSelector(false);
-                                navigate('/add-food?mode=manage');
-                            }}
-                            className="w-full text-left p-4 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2"
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-[#6B6B6B]">⚙️</span>
-                                <span className="font-medium text-white">Manage Food</span>
-                            </div>
-                            <span className="text-[#6B6B6B] group-hover:text-white">Open</span>
-                        </button>
-
-                        <button
-                            onClick={() => setShowMealSelector(false)}
-                            className="w-full py-3 text-[#6B6B6B] hover:text-white font-medium"
-                        >
-                            Cancel
-                        </button>
+                        <DiaryWorkoutCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('workout')} />
+                        <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} />
+                        <DiaryVitalsCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('vitals')} />
                     </div>
                 </div>
+
+                {/* --- LAYOUT 3: Large Desktop (>= 1100px) --- */}
+                <div className="hidden lg:grid grid-cols-3 gap-6">
+                    {/* Col 1: Calendar + Weight */}
+                    <div className="space-y-6">
+                        <Card className="p-4"><MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} /></Card>
+                        <CompactWeightCard />
+                    </div>
+                    {/* Col 2: Meals + Meds */}
+                    <div className="space-y-6">
+                        <DiaryMealsSummaryCard
+                            entries={entries} totals={totals}
+                            targets={{ calories: currentTargets.calories_per_day, protein: currentTargets.protein_g, carbs: currentTargets.carbs_g, fat: currentTargets.fat_g }}
+                            onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
+                        // Default behavior (internal state)
+                        />
+                        <DiaryMedicationCard date={selectedDate} />
+                    </div>
+                    {/* Col 3: Workout + Vitals */}
+                    <div className="space-y-6">
+                        <DiaryWorkoutCard date={selectedDate} />
+                        <DiaryVitalsCard date={selectedDate} />
+                    </div>
+                </div>
+
+            </div>
+
+
+            {/* --- Modals and Overlays --- */}
+
+            {/* Global Action Modal (FAB) */}
+            {showMealSelector && (
+                <GlobalActionModal
+                    onClose={() => setShowMealSelector(false)}
+                    onStartWorkout={() => {
+                        setShowMealSelector(false); // Close parent
+                        setShowStartWorkout(true);  // Open Start Modal
+                    }}
+                    onManageWorkouts={() => {
+                        setShowMealSelector(false);
+                        setShowWorkoutManager(true);
+                    }}
+                />
             )}
 
-            {/* Note: AddFoodModal, WaterModal, and FoodDatabaseModal are REMOVED entirely. */}
-            {/* They are replaced by routes: /add-food, /log-water */}
+            {/* Start Workout Modal */}
+            {showStartWorkout && (
+                <StartWorkoutModal
+                    onClose={() => setShowStartWorkout(false)}
+                    currentSession={activeSession}
+                    onStart={async (templateId) => {
+                        try {
+                            if (templateId) {
+                                const { session: newSession } = await workoutService.startWorkoutFromTemplate(session!.user!.id, templateId);
+                                navigate(`/workout/session/${newSession.id}`);
+                            } else {
+                                const newSession = await workoutService.startEmptySession(session!.user!.id);
+                                navigate(`/workout/session/${newSession.id}`);
+                            }
+                        } catch (e) { console.error(e); alert("Failed to start workout"); }
+                    }}
+                    onManage={() => {
+                        setShowStartWorkout(false);
+                        setShowWorkoutManager(true);
+                    }}
+                    onResume={() => {
+                        if (activeSession) navigate(`/workout/session/${activeSession.id}`);
+                    }}
+                    onEndSession={async () => {
+                        if (!activeSession) return;
+                        await workoutService.completeWorkout(activeSession.id);
+                        queryClient.invalidateQueries({ queryKey: ['workouts'] });
+                        setShowStartWorkout(false);
+                    }}
+                />
+            )}
 
-            {/* Edit Entry Modal - Kept as a modal for now as it's a small edit? Or should this be a page too? */}
-            {/* User prompt: "Edit Entry Modal" wasn't explicitly listed in the "Move to no-nav layout" section, but: */}
-            {/* "Any other step in the 'add food / add water' flow... " */}
-            {/* Editing an entry is technically part of "Diary management". */}
-            {/* However, the user said "Add Food sheet... Add to Breakfast... Manage Food". */}
-            {/* I'll keep Edit Entry as Modal for now to minimize risk, but might need to hide Nav if it's large. */}
-            {/* Actually, user said "Global nav rules... Bottom nav should be HIDDEN on ... Any other step in the 'add food' flow". */}
-            {/* Let's double check if EditEntry needs hiding. It currently uses useHideNavBar. Since it's inside Diary (Page with Nav), we might have an issue. */}
-            {/* But wait, simple modals can overlay. The issue was FULL SCREEN flows. */}
-            {/* If Edit Entry is a small popup, it's fine. If it's a full screen sheet, it might cover nav. */}
-            {/* The EditEntryModal currently uses `useHideNavBar`. But since we are removing the `AppShell` logic for hiding, `useHideNavBar` will stop working if we delete that logic. */}
-            {/* However, `AppShell` renders `BottomNav`. If we stay on `/diary`, `AppShell` is present. */}
-            {/* So `EditEntryModal` will still need to hide Nav if it overlaps. */}
-            {/* BUT, the user said "centralize decision... separate layouts". */}
-            {/* Ideally, Edit Entry is also a Page or a Modal that doesn't conflict. */}
-            {/* For now I will leave EditEntry as is, but remove the unused Modal imports. */}
+            {/* Workout Manager */}
+            {showWorkoutManager && (
+                <WorkoutManager onClose={() => setShowWorkoutManager(false)} />
+            )}
+
+
+            {/* Detail Modal for Mobile/Tablet */}
+            {activeDetail && (
+                <CardDetailModal onClose={() => setActiveDetail(null)}>
+                    {activeDetail === 'meals' && (
+                        <DiaryMealsSummaryCard
+                            entries={entries} totals={totals}
+                            targets={{ calories: currentTargets.calories_per_day, protein: currentTargets.protein_g, carbs: currentTargets.carbs_g, fat: currentTargets.fat_g }}
+                            onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
+                            forceExpanded={true}
+                        />
+                    )}
+                    {activeDetail === 'workout' && <DiaryWorkoutCard date={selectedDate} forceExpanded={true} />}
+                    {activeDetail === 'medication' && <DiaryMedicationCard date={selectedDate} forceExpanded={true} />}
+                    {activeDetail === 'vitals' && <DiaryVitalsCard date={selectedDate} forceExpanded={true} />}
+                </CardDetailModal>
+            )}
 
             {/* Edit Entry Modal */}
             {editingEntries && (

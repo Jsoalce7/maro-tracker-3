@@ -1,3 +1,14 @@
+// Weight Tracking
+export interface WeightLog {
+    id: string;
+    user_id: string;
+    date: string; // ISO date string YYYY-MM-DD
+    weight_lb: number;
+    source: string;
+    created_at: string;
+    updated_at?: string;
+}
+
 // User & Profile Types
 export interface UserProfile {
     id: string;

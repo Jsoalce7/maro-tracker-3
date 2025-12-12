@@ -169,7 +169,7 @@ export function MedicationManagerPage() {
 
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col md:flex-row">
+        <div className="min-h-screen bg-black text-white flex flex-col md:flex-row ios-pwa-layout-fix">
 
             {/* LEFT SIDEBAR */}
             <div className="w-full md:w-64 bg-[#1C1C1E] border-r border-[#2C2C2E] flex flex-col h-auto md:h-screen sticky top-0 md:relative z-10">

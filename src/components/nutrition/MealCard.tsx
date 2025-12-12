@@ -103,6 +103,7 @@ export function MealCard({
                             fat={mealTotals.fat}
                             size={72}
                             strokeWidth={6}
+                            hideText={false}
                         />
                     </div>
                 </div>
@@ -166,11 +167,19 @@ export function MealCard({
                                 <div className="flex flex-col gap-2 flex-1 min-w-0 pr-2">
                                     {/* Name */}
                                     <div className="pr-6"> {/* Padding for absolute button */}
-                                        <div className="text-[15px] font-bold text-white leading-tight mb-0.5 truncate">
-                                            {name}
+                                        <div className="text-[15px] font-bold text-white leading-tight mb-0.5 truncate flex items-center gap-2">
+                                            {firstEntry.recipe && (
+                                                <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded-[4px] uppercase font-bold tracking-wider inline-flex items-center whitespace-nowrap">
+                                                    🧩 My Meal
+                                                </span>
+                                            )}
+                                            <span className="truncate">{name}</span>
                                         </div>
                                         <div className="text-[12px] text-[#8E8E93] font-medium truncate">
-                                            {servingText}
+                                            {firstEntry.recipe
+                                                ? `${firstEntry.recipe.ingredients?.length || '0'} ingredients · ${servingText}`
+                                                : servingText
+                                            }
                                         </div>
                                     </div>
 
@@ -200,6 +209,7 @@ export function MealCard({
                                         fat={groupMacros.f}
                                         size={52}
                                         strokeWidth={5}
+                                        hideText={false}
                                     />
                                 </div>
                             </div>

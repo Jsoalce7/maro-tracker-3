@@ -83,7 +83,7 @@ export function LogWater() {
     };
 
     return (
-        <div className="min-h-screen bg-[#1A1A1A] flex flex-col">
+        <div className="min-h-screen bg-[#1A1A1A] flex flex-col ios-pwa-layout-fix">
             {/* Header */}
             <div className="flex justify-between items-center p-4 border-b border-[#2A2A2A] safe-top bg-[#1A1A1A]">
                 <h2 className="text-xl font-bold text-white">Log Water</h2>

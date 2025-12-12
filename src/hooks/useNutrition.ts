@@ -59,7 +59,14 @@ export function useNutrition(date: string) {
                     entries:food_entries (
                         *,
                         custom_food:user_custom_foods!food_entries_custom_food_id_fkey(*),
-                        recipe:recipes(*)
+                        recipe:recipes(
+                            *,
+                            ingredients:recipe_ingredients(
+                                *,
+                                food:food_items(*),
+                                custom_food:user_custom_foods(*)
+                            )
+                        )
                     )
                 `)
                 .eq('day_log_id', dayLog.id);
@@ -261,11 +268,27 @@ export function useNutrition(date: string) {
         },
     });
 
+    // Move Entry
+    const moveEntryMutation = useMutation({
+        mutationFn: async ({ entryIds, targetMealId }: { entryIds: string[], targetMealId: string }) => {
+            const { error } = await supabase
+                .from('food_entries')
+                .update({ meal_id: targetMealId })
+                .in('id', entryIds);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['dayLog', userId, date] });
+        },
+    });
+
     return {
         dayLog: dayLogQuery.data,
         isLoading: dayLogQuery.isLoading,
         addEntry: addEntryMutation.mutate,
         updateEntry: updateEntryMutation.mutate,
         deleteEntry: deleteEntryMutation.mutate,
+        moveEntry: moveEntryMutation.mutate,
     };
 }

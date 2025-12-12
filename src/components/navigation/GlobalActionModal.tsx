@@ -17,10 +17,7 @@ export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts, o
         onClose(); // Close modal first
 
         switch (action) {
-            case 'log_meal_breakfast': navigate('/add-food?mealType=breakfast'); break;
-            case 'log_meal_lunch': navigate('/add-food?mealType=lunch'); break;
-            case 'log_meal_dinner': navigate('/add-food?mealType=dinner'); break;
-            case 'log_meal_snack': navigate('/add-food?mealType=snacks'); break;
+            case 'log_meal': navigate('/add-food'); break;
             case 'log_water': navigate('/log-water'); break;
             case 'log_workout': onStartWorkout(); break;
             // Placeholders for now
@@ -66,19 +63,13 @@ export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts, o
                     {mode === 'log' ? (
                         <>
                             <div className="space-y-1">
-                                <p className="text-xs uppercase tracking-wider text-[#666] font-bold px-2 mb-2">Meals</p>
-                                <ActionItem icon="🍳" title="Breakfast" subtitle="Log your morning meal" onClick={() => handleAction('log_meal_breakfast')} />
-                                <ActionItem icon="🥗" title="Lunch" subtitle="Log your midday meal" onClick={() => handleAction('log_meal_lunch')} />
-                                <ActionItem icon="🥘" title="Dinner" subtitle="Log your evening meal" onClick={() => handleAction('log_meal_dinner')} />
-                                <ActionItem icon="🥨" title="Snack" subtitle="Log a quick bite" onClick={() => handleAction('log_meal_snack')} />
+                                <p className="text-xs uppercase tracking-wider text-[#666] font-bold px-2 mb-2">Log</p>
+                                <ActionItem icon="🍳" title="Meals" subtitle="Log a meal" onClick={() => handleAction('log_meal')} />
+                                <ActionItem icon="💪" title="Workout" subtitle="Log a session" onClick={() => handleAction('log_workout')} color="text-amber-500" />
+                                <ActionItem icon="💊" title="Medication" subtitle="Log meds" onClick={() => handleAction('manage_medications')} />
+                                <ActionItem icon="❤️" title="Vitals" subtitle="Log health stats" isStub />
+                                <ActionItem icon="💧" title="Water" subtitle="Log hydration" onClick={() => handleAction('log_water')} color="text-blue-400" />
                             </div>
-
-                            <div className="h-px bg-[#262626] my-2" />
-
-                            <ActionItem icon="💧" title="Water" subtitle="Log hydration" onClick={() => handleAction('log_water')} color="text-blue-400" />
-                            <ActionItem icon="💪" title="Workout" subtitle="Log a session" onClick={() => handleAction('log_workout')} color="text-amber-500" />
-                            <ActionItem icon="💊" title="Medication" subtitle="Log meds" onClick={() => handleAction('manage_medications')} />
-                            <ActionItem icon="❤️" title="Vitals" subtitle="Log health stats" isStub />
                         </>
                     ) : (
                         <>

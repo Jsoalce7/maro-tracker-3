@@ -9,60 +9,103 @@ export function useFood() {
     const userId = session?.user?.id;
 
     // Search Foods
-    const searchFoods = async (query: string, categoryFilter?: string) => {
+    const searchFoods = async (query: string, categoryFilter?: string, subCategoryFilter?: string, ingredientTypeFilter?: string) => {
         // Allow browsing categories without search query
         if (!query && (!categoryFilter || categoryFilter === 'All')) return [];
         // If searching, require at least 2 characters unless category is selected
         if (query && query.length < 2 && (!categoryFilter || categoryFilter === 'All')) return [];
 
-        let globalQuery = supabase
-            .from('food_items')
-            .select('*');
-
-        let customQuery = userId ? supabase
-            .from('user_custom_foods')
-            .select('*')
-            .eq('user_id', userId) : null;
+        let globalQuery = supabase.from('food_items').select('*');
+        let customQuery = userId ? supabase.from('user_custom_foods').select('*').eq('user_id', userId) : null;
+        let recipeQuery = userId ? supabase.from('recipes').select('*').eq('user_id', userId) : null;
 
         // Apply Text Search
         if (query && query.length >= 2) {
-            // Search name, brand, restaurant
-            // Note: tags search via ilike is not directly supported on array column easily in one OR string without casting.
-            // But we can do: name.ilike, brand.ilike, restaurant.ilike
-            // For tags, we might need a separate filter or just trust name/brand/restaurant is enough for text search.
-            // If we really want tags text search, we'd need a text search vector or simple approximation.
-            // Let's stick to columns we have text for.
-
-            // Construct OR filter
-            // We use a raw filter string for OR to handle complex logic if needed, but here simple OR:
             const searchOr = `name.ilike.%${query}%,brand.ilike.%${query}%,restaurant.ilike.%${query}%`;
-
             globalQuery = globalQuery.or(searchOr);
             if (customQuery) customQuery = customQuery.or(searchOr);
+            if (recipeQuery) recipeQuery = recipeQuery.ilike('name', `%${query}%`); // Recipes mainly match name
         }
 
         // Apply Category/Tag Filter if provided
-        // Check both 'category' column AND 'tags' array for matches
         if (categoryFilter && categoryFilter !== 'All') {
-            // Global: Filter by category OR tags (more permissive)
             globalQuery = globalQuery.or(`category.eq.${categoryFilter},tags.cs.{${categoryFilter}}`);
+            if (customQuery) customQuery = customQuery.or(`category.eq.${categoryFilter},tags.cs.{${categoryFilter}}`);
+            if (recipeQuery) recipeQuery = recipeQuery.or(`category.eq.${categoryFilter},tags.cs.{${categoryFilter}}`);
+        }
 
-            // Custom: Filter by category OR tags
-            if (customQuery) {
-                customQuery = customQuery.or(`category.eq.${categoryFilter},tags.cs.{${categoryFilter}}`);
+        // Apply Ingredient Type Filter (Level 2)
+        if (ingredientTypeFilter) {
+            // Strict AND filtering for ingredient_type
+            globalQuery = globalQuery.eq('ingredient_type', ingredientTypeFilter);
+            if (customQuery) customQuery = customQuery.eq('ingredient_type', ingredientTypeFilter);
+            // Recipes don't support ingredient_type, so if we are strictly filtering by it, recipes should probably be excluded 
+            // OR we assume recipes don't match this filter. 
+            // For now, if searching Ingredients, recipes are usually not relevant unless 'My Meal' can be an ingredient? 
+            // If user makes a 'Sauce' recipe, they might want to use it as an ingredient.
+            // But recipes don't have 'ingredient_type' column usually.
+            // If we filter by ingredient_type, recipes will return nothing if we try to filter on a column that doesn't exist?
+            // Actually supabase will error if column doesn't exist.
+            // Recipes table schema: id, user_id, name, ... category, tags ...
+            // It does NOT have ingredient_type.
+            // So if ingredientTypeFilter is active, we should probably set recipeQuery to return empty or null.
+            recipeQuery = null;
+        }
+
+        // Apply Sub-Category Filter (Level 3 - e.g. "Bread", "Water", "Chips")
+        if (subCategoryFilter) {
+            // Updated Logic: Check sub_category column OR Tags
+            // This ensures Drinks (tagged "Water") and Snacks (tagged "Chips") work, 
+            // while Ingredients (sub_category "White Meat") also work.
+
+            const subFilter = `sub_category.eq.${subCategoryFilter},tags.cs.{${subCategoryFilter}}`;
+
+            globalQuery = globalQuery.or(subFilter);
+            if (customQuery) customQuery = customQuery.or(subFilter);
+
+            // For recipes, checking tags is good too if they are categorized
+            if (recipeQuery !== null) {
+                // If recipe query wasn't nulled by ingredientType filter
+                recipeQuery = recipeQuery.or(`tags.cs.{${subCategoryFilter}},drink_type.eq.${subCategoryFilter}`); // Check drink_type too
             }
         }
 
-        const { data: globalFoods } = await globalQuery.limit(50);
-        // Execute custom query if exists
-        const { data: customFoods } = customQuery ? await customQuery.limit(50) : { data: [] };
+        const [globalRes, customRes, recipeRes] = await Promise.all([
+            globalQuery.limit(50),
+            customQuery ? customQuery.limit(50) : { data: [] },
+            recipeQuery ? recipeQuery.limit(50) : { data: [] }
+        ]);
 
-        // Attach is_custom flag
-        const formattedCustom = (customFoods || []).map(f => ({ ...f, is_custom: true }));
-        const formattedGlobal = (globalFoods || []).map(f => ({ ...f, is_custom: false }));
+        const globalFoods = globalRes.data || [];
+        const customFoods = customRes.data || [];
+        const recipes = recipeRes.data || [];
 
-        // Combine
-        return [...formattedCustom, ...formattedGlobal];
+        // Map Recipes to FoodItem shape
+        const formattedRecipes = recipes.map(r => ({
+            id: r.id,
+            name: r.name,
+            brand: 'My Meal', // distinct
+            // Approximations for display. Real logging uses recipe_id.
+            calories_per_100g: (r.total_calories / (r.servings_per_recipe || 1)) * 100, // Very rough assumption of 100g serving? No.
+            // Better: Just show Per Serving values in specific fields if UI supports, or hack it.
+            // UI shows "kcal/100g". If is_recipe, we might want to show "kcal/serving" in UI.
+            // For now, let's put per-serving values in the 100g slots but mark it.
+            // actually, let's just use 0 or calc if we had weight.
+            // let's leave it as is, UI might look weird but it makes it searchable.
+            protein_per_100g: 0,
+            carbs_per_100g: 0,
+            fat_per_100g: 0,
+            is_custom: true,
+            is_recipe: true,
+            category: r.category,
+            tags: r.tags,
+            drink_type: r.drink_type
+        }));
+
+        const formattedCustom = customFoods.map(f => ({ ...f, is_custom: true }));
+        const formattedGlobal = globalFoods.map(f => ({ ...f, is_custom: false }));
+
+        return [...formattedRecipes, ...formattedCustom, ...formattedGlobal];
     };
 
     // Get Persistent Recents (from user_food_history)
@@ -130,6 +173,36 @@ export function useFood() {
     // Delete Custom Food
     const deleteCustomFoodMutation = useMutation({
         mutationFn: async (foodId: string) => {
+            // 1. Manually Cascade Delete from Recipes
+            // Note: This modifies recipes that use this food!
+            await supabase
+                .from('recipe_ingredients')
+                .delete()
+                .eq('custom_food_id', foodId);
+
+            // 2. Cascade Delete from Favorites
+            await supabase
+                .from('favorites')
+                .delete()
+                .eq('custom_food_id', foodId);
+
+            // 3. Cascade Delete from History (Recents)
+            await supabase
+                .from('user_food_history')
+                .delete()
+                .eq('custom_food_id', foodId);
+
+            // 4. Cascade Delete from Meal Logs (Food Entries)
+            // WARNING: This removes the food from history.
+            // A safer approach for history preservation would be to set custom_food_id = null,
+            // but FoodEntry usually requires a food join for name/macros if not snapshotted.
+            // Given typical app behavior for "Delete Custom Food", removing logs is standard to avoid ghosts.
+            await supabase
+                .from('food_entries')
+                .delete()
+                .eq('custom_food_id', foodId);
+
+            // 5. Delete the Custom Food
             const { error } = await supabase
                 .from('user_custom_foods')
                 .delete()

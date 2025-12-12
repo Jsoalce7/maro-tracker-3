@@ -25,11 +25,17 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
 
     // Aggregates
     const firstEntry = entries[0];
+
+    // Recipe Helper
+    const recipe = firstEntry.recipe;
+    const recipeTotalWeight = recipe?.ingredients?.reduce((sum, i) => sum + i.quantity, 0) || 0;
+    const recipeServingSize = recipe && recipe.servings_per_recipe ? (recipeTotalWeight / recipe.servings_per_recipe) : 0;
+
     const totalCurrentGrams = entries.reduce((sum, e) => sum + e.quantity_g, 0);
-    const servingSize = firstEntry.food?.serving_size_g || 100;
+    const servingSize = firstEntry.food?.serving_size_g || recipeServingSize || 100;
 
     // Determine initial unit and quantity
-    // Priority: metric_unit from entry -> serving_unit from food -> default logic
+    // Priority: metric_unit from entry -> serving_unit from food -> serving_unit from recipe -> default logic
     const entryMetricUnit = firstEntry.metric_unit;
     const entryMetricQty = firstEntry.metric_quantity;
 
@@ -72,9 +78,36 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
         return 0;
     })();
 
-    const nutrition = firstEntry.food
-        ? calculateEntryNutrition(firstEntry.food, currentGrams)
-        : { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    const nutrition = (() => {
+        if (firstEntry.food) {
+            return calculateEntryNutrition(firstEntry.food, currentGrams);
+        }
+        if (recipe && recipe.ingredients && recipeTotalWeight > 0) {
+            const ratio = currentGrams / recipeTotalWeight;
+            // Calculate total recipe macros from ingredients
+            const recipeTotals = recipe.ingredients.reduce((acc, ing) => {
+                const item = ing.food || ing.custom_food;
+                if (!item) return acc;
+                // Ingredient quantity contribution
+                const q = ing.quantity; // grams used in recipe
+                const ratioSub = q / 100;
+                return {
+                    calories: acc.calories + (item.calories_per_100g * ratioSub),
+                    protein: acc.protein + (item.protein_per_100g * ratioSub),
+                    carbs: acc.carbs + (item.carbs_per_100g * ratioSub),
+                    fat: acc.fat + (item.fat_per_100g * ratioSub),
+                };
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+            return {
+                calories: Math.round(recipeTotals.calories * ratio),
+                protein: Math.round(recipeTotals.protein * ratio),
+                carbs: Math.round(recipeTotals.carbs * ratio),
+                fat: Math.round(recipeTotals.fat * ratio),
+            };
+        }
+        return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    })();
 
     // Helper to switch units and convert value
     const handleUnitChange = (newUnit: 'g' | 'serving' | 'oz' | 'ml') => {
@@ -102,14 +135,41 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
         if (!entries.length) return;
 
         // Nutrition is calculated from currentGrams
-        const food = firstEntry.food;
-        const ratio = currentGrams / 100;
-        const nutrition = {
-            calories: (food?.calories_per_100g || 0) * ratio,
-            protein: (food?.protein_per_100g || 0) * ratio,
-            carbs: (food?.carbs_per_100g || 0) * ratio,
-            fat: (food?.fat_per_100g || 0) * ratio,
-        };
+        // Nutrition is calculated from currentGrams
+        let nutritionToSave = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
+        if (firstEntry.food) {
+            const food = firstEntry.food;
+            const ratio = currentGrams / 100;
+            nutritionToSave = {
+                calories: (food?.calories_per_100g || 0) * ratio,
+                protein: (food?.protein_per_100g || 0) * ratio,
+                carbs: (food?.carbs_per_100g || 0) * ratio,
+                fat: (food?.fat_per_100g || 0) * ratio,
+            };
+        } else if (recipe && recipe.ingredients && recipeTotalWeight > 0) {
+            const ratio = currentGrams / recipeTotalWeight;
+            // Calculate total recipe macros from ingredients (Mirror logic above)
+            const recipeTotals = recipe.ingredients.reduce((acc, ing) => {
+                const item = ing.food || ing.custom_food;
+                if (!item) return acc;
+                const q = ing.quantity;
+                const ratioSub = q / 100;
+                return {
+                    calories: acc.calories + (item.calories_per_100g * ratioSub),
+                    protein: acc.protein + (item.protein_per_100g * ratioSub),
+                    carbs: acc.carbs + (item.carbs_per_100g * ratioSub),
+                    fat: acc.fat + (item.fat_per_100g * ratioSub),
+                };
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+
+            nutritionToSave = {
+                calories: recipeTotals.calories * ratio,
+                protein: recipeTotals.protein * ratio,
+                carbs: recipeTotals.carbs * ratio,
+                fat: recipeTotals.fat * ratio,
+            };
+        }
 
         const firstEntryItem = entries[0];
         let newLoggedAt = new Date().toISOString();
@@ -123,7 +183,7 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
         onUpdate(
             entries.map(e => e.id),
             currentGrams, // This is quantity_g
-            nutrition,
+            nutritionToSave,
             newLoggedAt,
             parseFloat(quantity) || 0, // metric_quantity
             unit // metric_unit
@@ -252,6 +312,45 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
                             <p className="text-white font-semibold text-sm sm:text-base">{nutrition.fat}g</p>
                         </div>
                     </div>
+                    {/* Ingredients List (if Recipe) */}
+                    {firstEntry.recipe && firstEntry.recipe.ingredients && (
+                        <div className="space-y-3 pt-2 border-t border-[#2A2A2A]">
+                            <h3 className="text-sm font-medium text-white">Ingredients</h3>
+                            <div className="space-y-2">
+                                {firstEntry.recipe.ingredients.map((ing, i) => {
+                                    // Calculate ingredient macros based on portion of recipe consumed
+                                    const fractionOfRecipe = recipeTotalWeight > 0 ? currentGrams / recipeTotalWeight : 0;
+                                    const amountConsumed = ing.quantity * fractionOfRecipe;
+
+                                    // Calculate macros for this amount
+                                    // ing.food might be undefined if not joined deep enough, but we fixed useNutrition
+                                    const item = ing.food || ing.custom_food;
+
+                                    const cal = item ? (item.calories_per_100g / 100) * amountConsumed : 0;
+                                    const p = item ? (item.protein_per_100g / 100) * amountConsumed : 0;
+                                    const c = item ? (item.carbs_per_100g / 100) * amountConsumed : 0;
+                                    const f = item ? (item.fat_per_100g / 100) * amountConsumed : 0;
+
+                                    return (
+                                        <div key={i} className="flex flex-col py-1 border-b border-[#222] last:border-0">
+                                            <div className="flex justify-between text-xs text-white mb-0.5">
+                                                <span>{ing.food?.name || ing.custom_food?.name || 'Unknown Item'}</span>
+                                                <span className="font-mono">{Math.round(amountConsumed)}g</span>
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-[#888]">
+                                                <span>
+                                                    {Math.round(cal)} kcal
+                                                    <span className="ml-2 text-[#EF4444]">P: {Math.round(p)}</span>
+                                                    <span className="ml-2 text-[#10B981]">C: {Math.round(c)}</span>
+                                                    <span className="ml-2 text-[#F59E0B]">F: {Math.round(f)}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-2">

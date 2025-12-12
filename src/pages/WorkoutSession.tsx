@@ -283,7 +283,7 @@ export function WorkoutSession() {
     if (restState) {
         if (restState.type === 'set') {
             return (
-                <div className="flex flex-col h-screen bg-[#050505]">
+                <div className="flex flex-col h-screen bg-[#050505] ios-pwa-layout-fix">
                     <SessionHeader
                         title={session.name || "Workout"}
                         subtitle={`Resting before Set ${currentSetIdx + 2}`}
@@ -301,7 +301,7 @@ export function WorkoutSession() {
             );
         } else {
             return (
-                <div className="flex flex-col h-screen bg-[#050505]">
+                <div className="flex flex-col h-screen bg-[#050505] ios-pwa-layout-fix">
                     <SessionHeader
                         title={session.name || "Workout"}
                         subtitle="Transitioning to next exercise"
@@ -321,7 +321,7 @@ export function WorkoutSession() {
 
     // Regular exercise view
     return (
-        <div className="flex flex-col h-screen bg-[#050505]">
+        <div className="flex flex-col h-screen bg-[#050505] ios-pwa-layout-fix">
             <SessionHeader
                 title={session.name || "Workout"}
                 subtitle={`Exercise ${currentExerciseIdx + 1} of ${exercises.length}`}

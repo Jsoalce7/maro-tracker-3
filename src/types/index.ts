@@ -66,6 +66,8 @@ export interface FoodItem {
     processing_level?: string; // 'Whole food', 'Ultra processed'
     tags?: string[];   // ['High protein', 'Keto']
     restaurant?: string; // 'McDonalds', 'In-N-Out'
+    is_custom?: boolean;
+    sub_category?: string; // New: 2nd level category (e.g. 'Bread', 'Fresh')
 }
 
 export interface FoodEntry {
@@ -116,6 +118,7 @@ export interface Recipe {
     processing_level?: string;
     tags?: string[];
     restaurant?: string;
+    drink_type?: string;
 }
 
 export interface RecipeIngredient {
@@ -124,6 +127,7 @@ export interface RecipeIngredient {
     food_id?: string;
     custom_food_id?: string;
     food?: FoodItem; // Joined
+    custom_food?: FoodItem; // Joined
     quantity: number; // Amount of the food used
     unit: string;
     display_order: number;

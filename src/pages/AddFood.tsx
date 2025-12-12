@@ -23,6 +23,8 @@ const CATEGORY_ORDER = [
     'Other'
 ];
 
+const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snacks'];
+
 const mealLabels: Record<MealType, string> = {
     breakfast: 'Breakfast',
     lunch: 'Lunch',
@@ -30,13 +32,23 @@ const mealLabels: Record<MealType, string> = {
     snacks: 'Snacks',
 };
 
-const CATEGORIES: Record<string, string[]> = {
+const CATEGORIES: Record<string, string[] | Record<string, string[]>> = {
     'Meal': ['Breakfast', 'Lunch', 'Dinner'],
-    'Snack': ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar'],
+    'Snack': ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Nut', 'Other'], // Removed Veg/Fruit/Yogurt
     'Drink': ['Water', 'Soda', 'Coffee', 'Tea', 'Energy Drink', 'Electrolytes', 'Alcohol', 'Juice', 'Smoothie', 'Protein Shake'],
-    'Ingredients': ['Protein', 'Dairy', 'Carbs', 'Fats', 'Condiments', 'Misc'],
-    'Fruit': ['Fresh', 'Dried', 'Frozen'],
-    'Vegetable': ['Fresh', 'Frozen', 'Canned'],
+    // Ingredients: Map Types to Subtypes
+    // Ingredients: Map Types to Subtypes
+    'Ingredients': {
+        'Carbs': ['Bread', 'Pasta', 'Tortillas', 'Grains'],
+        'Fats': ['Butter', 'Oil'],
+        'Dairy': ['Milk', 'Cheese', 'Yogurt'],
+        'Protein': ['White Meat', 'Red Meat', 'Egg', 'Plant Protein'],
+        'Condiments': [],
+        'Spices': [],
+        'Misc': []
+    },
+    'Fruit': ['Fresh', 'Dried', 'Frozen', 'Canned'],
+    'Vegetable': ['Fresh', 'Frozen', 'Canned', 'Dried'],
     'Fast Food': [],
     'Other': []
 };
@@ -68,6 +80,7 @@ export function AddFood() {
     // ... (State unchanged)
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedIngredientType, setSelectedIngredientType] = useState<string | null>(null); // New level for Ingredients
     const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
     const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
 
@@ -86,11 +99,19 @@ export function AddFood() {
     const [editingBrand, setEditingBrand] = useState<string | null>(null);
     const [brandNewName, setBrandNewName] = useState('');
 
+    // My Meals Filters
+    const [myMealFilterCategory, setMyMealFilterCategory] = useState<string | null>(null);
+    const [myMealFilterTags, setMyMealFilterTags] = useState<string[]>([]);
+
+    // Meal Type Selector State (for when entered without specific type)
+    const [showMealTypeSelector, setShowMealTypeSelector] = useState(false);
+    const [pendingLogAction, setPendingLogAction] = useState<(() => void) | null>(null);
+
 
     // Search Query
     const { data: searchResults } = useQuery({
         queryKey: ['foodSearch', searchQuery, selectedCategory, selectedSubCategory],
-        queryFn: () => searchFoods(searchQuery, selectedCategory || 'All'),
+        queryFn: () => searchFoods(searchQuery, selectedCategory || 'All', selectedSubCategory || undefined, selectedIngredientType || undefined),
         enabled: true,
         staleTime: 1000 * 60,
     });
@@ -134,6 +155,10 @@ export function AddFood() {
             setSelectedSubCategory(null);
             return;
         }
+        if (selectedIngredientType) {
+            setSelectedIngredientType(null);
+            return;
+        }
         if (selectedRestaurant) {
             setSelectedRestaurant(null);
             return;
@@ -151,7 +176,22 @@ export function AddFood() {
     };
 
     const handleAddSingle = () => {
-        if (!selectedFood || !dayLog || !mealType) return;
+        if (!selectedFood) return;
+
+        // If no mealType is selected (entered via 'Meals' button), show selector
+        if (!mealType) {
+            setPendingLogAction(() => () => {
+                const qty = parseFloat(quantity) || 0;
+                const isRecipe = (selectedFood as any).is_recipe;
+                const isCustom = (selectedFood as any).is_custom;
+                logFood(selectedFood, qty, servingUnit, isCustom, isRecipe);
+                navigate(-1);
+            });
+            setShowMealTypeSelector(true);
+            return;
+        }
+
+        if (!dayLog) return; // Should be loaded by now
 
         const qty = parseFloat(quantity) || 0;
         const isRecipe = (selectedFood as any).is_recipe;
@@ -162,7 +202,24 @@ export function AddFood() {
     };
 
     const handleAddMulti = () => {
-        if (!dayLog || !mealType) return;
+        if (!dayLog) return;
+
+        if (!mealType) {
+            setPendingLogAction(() => () => {
+                selectedItems.forEach(item => {
+                    logFood(
+                        item.food,
+                        item.quantity,
+                        item.unit,
+                        (item.food as any).is_custom,
+                        (item.food as any).is_recipe
+                    );
+                });
+                navigate(-1);
+            });
+            setShowMealTypeSelector(true);
+            return;
+        }
 
         selectedItems.forEach(item => {
             logFood(
@@ -181,10 +238,15 @@ export function AddFood() {
         quantity: number,
         unit: string,
         isCustom?: boolean,
-        isRecipe?: boolean
+        isRecipe?: boolean,
+        overrideMealType?: MealType
     ) => {
-        const meal = dayLog?.meals.find(m => m.meal_type === mealType);
-        if (!meal) return;
+        const effectiveMealType = overrideMealType || mealType;
+        const meal = dayLog?.meals.find(m => m.meal_type === effectiveMealType);
+        if (!meal) {
+            console.error("No meal found for type:", effectiveMealType);
+            return;
+        }
 
         // Calculate Nutrition based on Unit
         let quantityInGrams = quantity;
@@ -298,20 +360,30 @@ export function AddFood() {
                 const subCatLower = selectedSubCategory.toLowerCase();
                 displayFoods = displayFoods.filter(f => {
                     return (
-                        // Check name
+                        // Check name (if sub matches name part)
                         f.name.toLowerCase().includes(subCatLower) ||
                         // Check tags (exact match, case-insensitive)
                         (f.tags && f.tags.some(tag => tag.toLowerCase() === subCatLower)) ||
                         // Check tags (partial match)
                         (f.tags && f.tags.some(tag => tag.toLowerCase().includes(subCatLower))) ||
-                        // Check ingredient_type for Ingredients category
-                        (f.category === 'Ingredients' && f.ingredient_type === selectedSubCategory) ||
+                        // Strict filtering: If ingredient type is selected, enforce it?
+                        // Actually searchFoods return should already be filtered. 
+                        // But if we are filtering local displayFoods (recents?), we need strict logic.
+                        (f.category === 'Ingredients' && f.ingredient_type === selectedIngredientType && (!selectedSubCategory || f.sub_category === selectedSubCategory)) ||
+                        // Check sub_category explicitly
+                        (f.sub_category === selectedSubCategory) ||
                         // Check category itself
                         (f.category && f.category.toLowerCase() === subCatLower) ||
                         // Check source
                         (f.source && f.source.toLowerCase() === subCatLower)
                     );
                 });
+            } else if (selectedCategory === 'Ingredients' && selectedIngredientType) {
+                // Level 2 Filter (Type only, e.g. "Carbs")
+                // If selectedSubCategory is null, we want ALL items in this type (e.g. "All Carbs")
+                // searchFoods handles this if we pass ingredientTypeFilter.
+                // But for client-side filtering of displayFoods (e.g. if we had broader results):
+                displayFoods = displayFoods.filter(f => f.category === 'Ingredients' && f.ingredient_type === selectedIngredientType);
             }
 
             // Apply restaurant filter for Fast Food
@@ -330,7 +402,7 @@ export function AddFood() {
     }
 
     return (
-        <div className="min-h-screen bg-[#141414] flex flex-col text-white">
+        <div className="min-h-screen bg-[#141414] flex flex-col text-white ios-pwa-layout-fix">
 
             {/* SAFE AREA TOP for mobile */}
             <div className="safe-top bg-[#141414]"></div>
@@ -349,7 +421,7 @@ export function AddFood() {
                             </svg>
                         </button>
                         <h2 className="text-white font-semibold text-lg">
-                            {mealType ? `Add to ${mealLabels[mealType]}` : (mode === 'manage' ? 'Manage Foods' : 'Food Database')}
+                            {mealType ? `Add to ${mealLabels[mealType]}` : (mode === 'manage' ? 'Manage Foods' : 'Add Food')}
                         </h2>
                     </div>
 
@@ -491,31 +563,84 @@ export function AddFood() {
 
                         {/* My Meals List */}
                         {selectedCategory === 'My Meals' && (
-                            <div className="space-y-1">
-                                {(recipes || []).map(recipe => (
-                                    <button key={recipe.id}
-                                        onClick={() => {
-                                            // Construct pseudo FoodItem from Recipe
-                                            handleSelectFood({
-                                                id: recipe.id,
-                                                name: recipe.name,
-                                                brand: 'Homemade',
-                                                calories_per_100g: (recipe.total_calories / (recipe.servings_per_recipe || 1)) * 100,
-                                                protein_per_100g: recipe.total_protein * 100,
-                                                carbs_per_100g: recipe.total_carbs * 100,
-                                                fat_per_100g: recipe.total_fat * 100,
-                                                serving_size_g: 1,
-                                                serving_unit: 'serving',
-                                                is_recipe: true,
-                                                original_recipe: recipe
-                                            } as any);
-                                        }}
-                                        className="w-full text-left p-3 rounded-xl hover:bg-[#1A1A1A] border border-transparent hover:border-[#2A2A2A]"
-                                    >
-                                        <div className="font-medium">{recipe.name}</div>
-                                        <div className="text-xs text-[#6B6B6B]">{Math.round(recipe.total_calories / (recipe.servings_per_recipe || 1))} kcal/srv</div>
-                                    </button>
-                                ))}
+                            <div className="space-y-4">
+                                {/* Filters */}
+                                <div className="space-y-3">
+                                    {/* Category Filter */}
+                                    <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
+                                        <button onClick={() => setMyMealFilterCategory(null)} className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border ${!myMealFilterCategory ? 'bg-[#3B82F6] border-[#3B82F6] text-white' : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1]'}`}>All</button>
+                                        {['Meal', 'Snack', 'Drink', 'Condiment', 'Fast Food'].map(cat => (
+                                            <button key={cat} onClick={() => setMyMealFilterCategory(cat === myMealFilterCategory ? null : cat)} className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border ${myMealFilterCategory === cat ? 'bg-[#3B82F6] border-[#3B82F6] text-white' : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1]'}`}>{cat}</button>
+                                        ))}
+                                    </div>
+                                    {/* Tag Filter */}
+                                    <div className="flex gap-2">
+                                        {['Breakfast', 'Lunch', 'Dinner'].map(tag => (
+                                            <button
+                                                key={tag}
+                                                onClick={() => setMyMealFilterTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium border ${myMealFilterTags.includes(tag) ? 'bg-[#10B981]/20 border-[#10B981] text-[#10B981]' : 'bg-[#1A1A1A] border-[#333] text-[#666]'}`}
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    {(recipes || [])
+                                        .filter(r => {
+                                            if (myMealFilterCategory && r.category !== myMealFilterCategory) return false;
+                                            if (myMealFilterTags.length > 0) {
+                                                if (!r.tags) return false;
+                                                // Must match at least one selected tag? Or all? Usually "OR" for tags in UI, "AND" for cat+tags.
+                                                // Let's assume OR for tags if multiple selected (show Bfast or Lunch options).
+                                                // Actually user said "Only show My Meals whose saved category/tags match the filters".
+                                                // Usually filter tags is Intersection or Union. Let's do Intersection for safety (Must match ALL selected tags)? 
+                                                // No, Breakfast AND Lunch is rare. Union (OR) is better for "I want Bfast or Lunch options".
+                                                const hasMatch = myMealFilterTags.some(t => r.tags?.includes(t));
+                                                if (!hasMatch) return false;
+                                            }
+                                            return true;
+                                        })
+                                        .map(recipe => (
+                                            <button key={recipe.id}
+                                                onClick={() => {
+                                                    // Construct pseudo FoodItem from Recipe
+                                                    handleSelectFood({
+                                                        id: recipe.id,
+                                                        name: recipe.name,
+                                                        brand: 'Homemade',
+                                                        calories_per_100g: (recipe.total_calories / (recipe.servings_per_recipe || 1)) * 100,
+                                                        protein_per_100g: recipe.total_protein * 100,
+                                                        carbs_per_100g: recipe.total_carbs * 100,
+                                                        fat_per_100g: recipe.total_fat * 100,
+                                                        serving_size_g: 1,
+                                                        serving_unit: 'serving',
+                                                        is_recipe: true,
+                                                        original_recipe: recipe,
+                                                        category: recipe.category, // Pass category
+                                                        tags: recipe.tags
+                                                    } as any);
+                                                }}
+                                                className="w-full text-left p-3 rounded-xl hover:bg-[#1A1A1A] border border-transparent hover:border-[#2A2A2A] group relative"
+                                            >
+                                                <div className="font-medium pr-16">{recipe.name}</div>
+                                                <div className="text-xs text-[#6B6B6B] flex items-center gap-2 mt-1">
+                                                    <span>{Math.round(recipe.total_calories / (recipe.servings_per_recipe || 1))} kcal/srv</span>
+                                                    {recipe.category && <span className="bg-[#2A2A2A] px-1.5 rounded text-[10px] text-[#888]">{recipe.category}</span>}
+                                                </div>
+                                                {/* Edit Button */}
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span
+                                                        onClick={(e) => { e.stopPropagation(); navigate('/create-recipe', { state: { editRecipe: recipe } }); }}
+                                                        className="p-2 bg-[#2A2A2A] rounded-lg hover:text-white cursor-pointer"
+                                                    >✎</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    {recipes?.length === 0 && <div className="text-center text-[#6B6B6B] py-8">No meals found</div>}
+                                </div>
                             </div>
                         )}
 
@@ -550,14 +675,86 @@ export function AddFood() {
                                 })()}
 
                                 {/* Sub Cats */}
-                                {selectedCategory !== 'Fast Food' && CATEGORIES[selectedCategory]?.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-6 px-1">
-                                        <button onClick={() => setSelectedSubCategory(null)} className={`px-3 py-1.5 rounded-full text-xs font-medium border ${!selectedSubCategory ? 'bg-[#3B82F6] border-[#3B82F6]' : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1]'}`}>All</button>
-                                        {CATEGORIES[selectedCategory].map(sub => (
-                                            <button key={sub} onClick={() => setSelectedSubCategory(sub)} className={`px-3 py-1.5 rounded-full text-xs font-medium border ${selectedSubCategory === sub ? 'bg-[#3B82F6] border-[#3B82F6]' : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1]'}`}>{sub}</button>
-                                        ))}
-                                    </div>
-                                )}
+                                {/* Sub Cats & Ingredient Types */}
+                                {selectedCategory !== 'Fast Food' && (() => {
+                                    const catData = CATEGORIES[selectedCategory];
+
+                                    // 1. Ingredients Logic (Level 2: Types)
+                                    // Always show types when Ingredients is selected
+                                    if (selectedCategory === 'Ingredients') {
+                                        return (
+                                            <div className="mb-6 px-1 space-y-4">
+                                                {/* Level 2: Types */}
+                                                <div className="flex flex-wrap gap-2">
+                                                    {Object.keys(catData).map(type => (
+                                                        <button
+                                                            key={type}
+                                                            onClick={() => {
+                                                                // Toggle type
+                                                                if (selectedIngredientType === type) {
+                                                                    setSelectedIngredientType(null);
+                                                                    setSelectedSubCategory(null);
+                                                                } else {
+                                                                    setSelectedIngredientType(type);
+                                                                    setSelectedSubCategory(null); // Default to viewing ALL items in this type
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedIngredientType === type
+                                                                ? 'bg-[#3B82F6] border-[#3B82F6] text-white'
+                                                                : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1] hover:text-white'
+                                                                }`}
+                                                        >
+                                                            {type}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {/* Level 3: SubTypes (Inline) */}
+                                                {selectedIngredientType && (catData as any)[selectedIngredientType] && (
+                                                    <div className="pt-2 border-t border-[#2A2A2A] animate-in fade-in slide-in-from-top-1">
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {/* Manual "All [Type]" Chip */}
+                                                            <button
+                                                                onClick={() => setSelectedSubCategory(null)}
+                                                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${!selectedSubCategory
+                                                                    ? 'bg-[#3B82F6] border-[#3B82F6] text-white'
+                                                                    : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1] hover:text-white'
+                                                                    }`}
+                                                            >
+                                                                All {selectedIngredientType}
+                                                            </button>
+
+                                                            {(catData as any)[selectedIngredientType].map((sub: string) => (
+                                                                <button
+                                                                    key={sub}
+                                                                    onClick={() => setSelectedSubCategory(sub)}
+                                                                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${selectedSubCategory === sub
+                                                                        ? 'bg-[#3B82F6] border-[#3B82F6] text-white'
+                                                                        : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1] hover:text-white'
+                                                                        }`}
+                                                                >
+                                                                    {sub}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
+                                    // 3. Normal Array Categories (Fruit, Veg, Drink...)
+                                    if (Array.isArray(catData) && catData.length > 0) {
+                                        return (
+                                            <div className="flex flex-wrap gap-2 mb-6 px-1">
+                                                <button onClick={() => setSelectedSubCategory(null)} className={`px-3 py-1.5 rounded-full text-xs font-medium border ${!selectedSubCategory ? 'bg-[#3B82F6] border-[#3B82F6]' : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1]'}`}>All</button>
+                                                {catData.map(sub => (
+                                                    <button key={sub} onClick={() => setSelectedSubCategory(sub)} className={`px-3 py-1.5 rounded-full text-xs font-medium border ${selectedSubCategory === sub ? 'bg-[#3B82F6] border-[#3B82F6]' : 'bg-[#1A1A1A] border-[#333] text-[#A1A1A1]'}`}>{sub}</button>
+                                                ))}
+                                            </div>
+                                        );
+                                    }
+                                })()}
 
                                 {/* Results - Only show if not Fast Food or if restaurant is selected */}
                                 {!(selectedCategory === 'Fast Food' && !selectedRestaurant) && (
@@ -568,8 +765,15 @@ export function AddFood() {
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <div className="font-medium">{food.name}</div>
-                                                        <div className="text-xs text-[#6B6B6B]">{food.brand} • {formatCalories(food.calories_per_100g)} kcal</div>
+                                                        <div className="font-medium flex items-center gap-2">
+                                                            {food.name}
+                                                            {(food as any).is_recipe && (
+                                                                <span className="bg-[#3B82F6]/20 text-[#3B82F6] text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">My Meal</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-[#6B6B6B]">
+                                                            {(food as any).is_recipe ? 'My Meal' : food.brand} • {formatCalories(food.calories_per_100g)} kcal
+                                                        </div>
                                                     </div>
                                                     {isMultiSelect && (
                                                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedItems.some(i => i.food.id === food.id) ? 'bg-[#3B82F6] border-[#3B82F6]' : 'border-[#6B6B6B]'}`}>
@@ -590,8 +794,13 @@ export function AddFood() {
                             <div className="space-y-1">
                                 {displayFoods.map(food => (
                                     <button key={food.id} onClick={() => handleSelectFood(food)} className={`w-full text-left p-3 rounded-xl border ${selectedFood?.id === food.id ? 'bg-[#3B82F6]/10 border-[#3B82F6]' : 'bg-transparent border-transparent hover:bg-[#1A1A1A]'}`}>
-                                        <div className="font-medium">{food.name}</div>
-                                        <div className="text-xs text-[#6B6B6B]">{food.brand} • {formatCalories(food.calories_per_100g)} kcal</div>
+                                        <div className="font-medium flex items-center gap-2">
+                                            {food.name}
+                                            {(food as any).is_recipe && (
+                                                <span className="bg-[#3B82F6]/20 text-[#3B82F6] text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">My Meal</span>
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-[#6B6B6B]">{(food as any).is_recipe ? 'My Meal' : food.brand} • {formatCalories(food.calories_per_100g)} kcal</div>
                                     </button>
                                 ))}
                                 {displayFoods.length === 0 && <div className="text-center text-[#6B6B6B] py-8">No results</div>}
@@ -605,7 +814,7 @@ export function AddFood() {
 
             {/* If food selected, show sticky footer */}
             {selectedFood && (
-                <div className="shrink-0 bg-[#141414] border-t border-[#2A2A2A] p-4 shadow-2xl z-20 sticky bottom-0">
+                <div className="shrink-0 bg-[#141414] border-t border-[#2A2A2A] px-4 pt-4 pb-safe shadow-2xl z-20 sticky bottom-0">
                     <div className="flex bg-[#0A0A0A] rounded-xl border border-[#2A2A2A] p-1 mb-3">
                         <div className="flex-1 flex items-center px-3 border-r border-[#2A2A2A]">
                             <input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} className="bg-transparent text-white text-lg w-full focus:outline-none text-center" placeholder="1" />
@@ -755,7 +964,7 @@ export function AddFood() {
                             );
                         })}
                     </div>
-                    <div className="p-4 border-t border-[#2A2A2A] bg-[#141414] pb-safe-bottom">
+                    <div className="p-4 border-t border-[#2A2A2A] bg-[#141414] pb-safe">
                         <button onClick={handleAddMulti} className="w-full bg-[#3B82F6] text-white font-bold py-3.5 rounded-xl">
                             Confirm & Log
                         </button>
@@ -765,7 +974,7 @@ export function AddFood() {
 
             {/* Fixed Footer Tabs (Only when nothing selected) */}
             {!selectedFood && !showReview && (
-                <div className="shrink-0 border-t border-[#2A2A2A] bg-[#141414] px-4 pb-safe-bottom grid grid-cols-2 gap-2 sticky bottom-0">
+                <div className="shrink-0 border-t border-[#2A2A2A] bg-[#141414] px-4 pb-safe grid grid-cols-2 gap-2 sticky bottom-0">
                     <button onClick={() => { setActiveTab('search'); setSearchView('categories'); }} className={`py-3 flex flex-col items-center gap-1 ${activeTab === 'search' ? 'text-[#3B82F6]' : 'text-[#6B6B6B]'}`}>
                         <span className="text-sm font-medium">Search</span>
                     </button>
@@ -835,6 +1044,70 @@ export function AddFood() {
                 </div>
             )}
 
+            {/* Meal Type Selector Modal (Late binding) */}
+            {showMealTypeSelector && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMealTypeSelector(false)} />
+                    <div className="relative z-10 bg-[#141414] w-full max-w-sm rounded-2xl p-5 space-y-3 border border-[#2A2A2A] animate-slide-up">
+                        <h3 className="text-white font-bold text-center text-lg mb-2">Which meal is this for?</h3>
+                        {MEAL_TYPES.map(type => (
+                            <button
+                                key={type}
+                                onClick={() => {
+                                    // Update URL param for future context? Or just pass to action?
+                                    // Easier to just re-call the pending action but with a way to inject type.
+                                    // Actually, we can just execute the logic here directly or pass the type.
+                                    // Since logFood reads from scope, we need to pass the override.
+
+                                    // Special handling for pending action: it's a closure. We need to recreate the logic 
+                                    // OR modify logFood to accept an override (done above).
+                                    // But pendingLogAction is a void function. 
+                                    // Let's redefine pendingLogAction to ACCEPT the type.
+
+                                    // Better approach: Just re-implement the 'save' logic here for simplest path, OR
+                                    // Update the 'pendingLogAction' concept to be a function that TAKES the type.
+
+                                    if (pendingLogAction) {
+                                        // This is tricky because we wrapped it in a closure. 
+                                        // Let's explicitly handle Single and Multi here for clarity.
+
+                                        if (isMultiSelect) {
+                                            selectedItems.forEach(item => {
+                                                logFood(
+                                                    item.food,
+                                                    item.quantity,
+                                                    item.unit,
+                                                    (item.food as any).is_custom,
+                                                    (item.food as any).is_recipe,
+                                                    type // Override
+                                                );
+                                            });
+                                            navigate(-1);
+                                        } else if (selectedFood) {
+                                            const qty = parseFloat(quantity) || 0;
+                                            const isRecipe = (selectedFood as any).is_recipe;
+                                            const isCustom = (selectedFood as any).is_custom;
+                                            logFood(selectedFood, qty, servingUnit, isCustom, isRecipe, type);
+                                            navigate(-1);
+                                        }
+                                    }
+                                    setShowMealTypeSelector(false);
+                                }}
+                                className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group min-h-[56px]"
+                            >
+                                <span className="capitalize font-medium text-white">{mealLabels[type]}</span>
+                                <span className="text-[#3B82F6]">Select</span>
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setShowMealTypeSelector(false)}
+                            className="w-full py-3 text-[#6B6B6B] hover:text-white font-medium"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

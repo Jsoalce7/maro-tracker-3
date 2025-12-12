@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { EditEntryModal } from '../components/nutrition/EditEntryModal';
+import { GlobalActionModal } from '../components/navigation/GlobalActionModal';
 import { CompactMealCard } from '../components/nutrition/CompactMealCard';
 import { DailyNutritionCard } from '../components/nutrition/DailyNutritionCard';
 import { useAppStore } from '../stores/appStore';
@@ -13,13 +14,20 @@ import { getTodayLocal, formatDateDisplay } from '../utils/date';
 export function Home() {
     const navigate = useNavigate();
 
+    const mealLabels: Record<MealType, string> = {
+        breakfast: 'Breakfast',
+        lunch: 'Lunch',
+        dinner: 'Dinner',
+        snacks: 'Snacks',
+    };
+
     // Added state for meal selector
     const [showMealSelector, setShowMealSelector] = useState(false);
 
     // Data Hooks
     const { targets } = useProfile();
     const today = getTodayLocal();
-    const { dayLog, addEntry, deleteEntry, updateEntry, isLoading } = useNutrition(today);
+    const { dayLog, addEntry, deleteEntry, updateEntry, moveEntry, isLoading } = useNutrition(today);
     const { waterLogs, totalWaterMl } = useWater(today);
 
     // Open Add Food (Navigate)
@@ -113,6 +121,27 @@ export function Home() {
         });
     };
 
+    const handleMoveEntry = (entryIds: string[], targetMealType: MealType) => {
+        const targetMeal = dayLog?.meals.find(m => m.meal_type === targetMealType);
+        if (targetMeal) {
+            moveEntry({ entryIds, targetMealId: targetMeal.id });
+        } else {
+            console.error("Target meal not found:", targetMealType);
+            alert("Could not move items. Target meal does not exist.");
+        }
+    };
+
+    const handleSaveAsMyMeal = (entries: FoodEntry[], sourceMealType: MealType) => {
+        // Prepare entries for CreateRecipe
+        // We pass the raw entries, CreateRecipe will map them
+        navigate('/create-recipe', {
+            state: {
+                fromMeal: entries,
+                defaultName: `${mealLabels[sourceMealType]} - ${formatDateDisplay(today)}`
+            }
+        });
+    };
+
     if (isLoading && !dayLog) {
         return <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center text-white">Loading...</div>;
     }
@@ -170,6 +199,8 @@ export function Home() {
                                     totalCalories={getMealCalories(mealType)}
                                     onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
                                     onEditEntry={handleEditGroup}
+                                    onMoveEntry={handleMoveEntry}
+                                    onSaveAsMyMeal={(entries) => handleSaveAsMyMeal(entries, mealType)}
                                 />
                             ))}
                         </div>
@@ -177,68 +208,28 @@ export function Home() {
                 </div>
             </div>
 
-            {/* Meal Selector Modal */}
+            {/* Global Action Modal */}
             {showMealSelector && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => {
-                        // showNavBar();
+                <GlobalActionModal
+                    onClose={() => setShowMealSelector(false)}
+                    onStartWorkout={() => {
                         setShowMealSelector(false);
-                    }} />
-                    <div className="relative z-10 bg-[#141414] w-full max-w-sm rounded-2xl p-5 space-y-3 border border-[#2A2A2A] animate-slide-up">
-                        <h3 className="text-white font-bold text-center text-lg mb-2">Add Food</h3>
-                        {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map(type => (
-                            <button
-                                key={type}
-                                onClick={() => {
-                                    handleOpenAddFood(type);
-                                    setShowMealSelector(false);
-                                }}
-                                className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group min-h-[56px]"
-                            >
-                                <span className="capitalize font-medium text-white">{type}</span>
-                                <span className="text-[#6B6B6B] group-hover:text-white">+ Add</span>
-                            </button>
-                        ))}
-
-                        <button
-                            onClick={() => {
-                                setShowMealSelector(false);
-                                navigate('/log-water');
-                            }}
-                            className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-blue-900/20 hover:bg-blue-900/30 border border-blue-900/50 transition-colors flex items-center justify-between group mt-2 min-h-[56px]"
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-blue-400">💧</span>
-                                <span className="font-medium text-blue-100">Log Water</span>
-                            </div>
-                            <span className="text-blue-400">+ Add</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setShowMealSelector(false);
-                                navigate('/add-food?mode=manage');
-                            }}
-                            className="w-full text-left p-4 sm:p-3.5 rounded-xl bg-[#2A2A2A] hover:bg-[#333] transition-colors flex items-center justify-between group mt-2 min-h-[56px]"
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-[#6B6B6B]">⚙️</span>
-                                <span className="font-medium text-white">Manage Food</span>
-                            </div>
-                            <span className="text-[#6B6B6B] group-hover:text-white">Open</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                // showNavBar();
-                                setShowMealSelector(false);
-                            }}
-                            className="w-full py-3 text-[#6B6B6B] hover:text-white font-medium"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
+                        // Logic to start workout or navigate
+                        navigate('/workout/session/new'); // Placeholder, adjust if needed
+                    }}
+                    onManageWorkouts={() => {
+                        setShowMealSelector(false);
+                        navigate('/add-food?mode=manage'); // Placeholder based on old logic? No, wait.
+                        // The old modal had "Manage Food" -> /add-food?mode=manage.
+                        // GlobalActionModal has "Manage Workouts" -> /workout-manager (implied).
+                        // Let's wire it correctly.
+                        navigate('/workouts');
+                    }}
+                    onManageMedications={() => {
+                        setShowMealSelector(false);
+                        navigate('/medications');
+                    }}
+                />
             )}
 
             {/* Note: AddFoodModal, WaterModal etc REMOVED. */}

@@ -35,7 +35,7 @@ export function useRecipes() {
                 ingredients: recipe.ingredients?.map((ing: any) => ({
                     ...ing,
                     food: ing.food || ing.custom_food
-                }))
+                })).filter((ing: any) => !!ing.food) // Vital: Filter out ingredients where food linkage is broken (deleted food)
             })) as Recipe[];
         },
         enabled: !!userId,
@@ -73,7 +73,11 @@ export function useRecipes() {
             description?: string,
             servings_per_recipe: number,
             serving_unit?: string,
-            ingredients: { food_id?: string, custom_food_id?: string, quantity: number, unit: string }[]
+            ingredients: { food_id?: string, custom_food_id?: string, quantity: number, unit: string }[],
+            // new fields
+            category?: string,
+            tags?: string[],
+            drink_type?: string
         }) => {
             if (!userId) throw new Error('No user');
 
@@ -91,7 +95,11 @@ export function useRecipes() {
                     total_calories: totals.calories,
                     total_protein: totals.protein,
                     total_carbs: totals.carbs,
-                    total_fat: totals.fat
+                    total_fat: totals.fat,
+                    // metadata
+                    category: newRecipe.category || null,
+                    tags: newRecipe.tags || null,
+                    drink_type: newRecipe.drink_type || null
                 })
                 .select()
                 .single();
@@ -113,7 +121,12 @@ export function useRecipes() {
                     .from('recipe_ingredients')
                     .insert(ingredientsPayload);
 
-                if (ingredientsError) throw ingredientsError;
+                if (ingredientsError) {
+                    // ROLLBACK: Delete the recipe header if ingredients fail
+                    console.error("Failed to insert ingredients, rolling back recipe creation...");
+                    await supabase.from('recipes').delete().eq('id', recipe.id);
+                    throw ingredientsError;
+                }
             }
 
             return recipe;
@@ -158,7 +171,25 @@ export function useRecipes() {
                         display_order: index
                     }));
 
-                    const { error: ingError } = await supabase.from('recipe_ingredients').insert(ingredientsPayload);
+                    // Sanitize: Check for duplicates in the payload itself (e.g. adding same egg twice)
+                    // If table has Unique(recipe_id, food_id), we cannot add same food twice. 
+                    // But users might want "2 eggs" + "1 egg". 
+                    // If the schema restricts it, we must merge them or fail.
+                    // Assuming schema is likely Unique(recipe_id, food_id, custom_food_id) or similar.
+                    // Ideally we should merge duplicates.
+
+                    const uniqueIngredients = ingredientsPayload.reduce((acc, current) => {
+                        const key = `${current.food_id || ''}-${current.custom_food_id || ''}`;
+                        const existing = acc.find(item => `${item.food_id || ''}-${item.custom_food_id || ''}` === key);
+                        if (existing) {
+                            existing.quantity += current.quantity; // Merge quantities
+                        } else {
+                            acc.push(current);
+                        }
+                        return acc;
+                    }, [] as typeof ingredientsPayload);
+
+                    const { error: ingError } = await supabase.from('recipe_ingredients').insert(uniqueIngredients);
                     if (ingError) throw ingError;
                 }
             }
@@ -180,6 +211,10 @@ export function useRecipes() {
     // Delete Recipe
     const deleteRecipeMutation = useMutation({
         mutationFn: async (recipeId: string) => {
+            // 1. Manually Cascade Delete Ingredients (Safety)
+            await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+
+            // 2. Delete Recipe
             const { error } = await supabase.from('recipes').delete().eq('id', recipeId);
             if (error) throw error;
         },

@@ -47,6 +47,15 @@ function App() {
 
   useEffect(() => {
     initialize();
+
+    // iOS PWA Detection
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isIOS && isStandalone) {
+      document.body.classList.add('ios-pwa');
+    }
   }, [initialize]);
 
   return (
@@ -60,14 +69,14 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/diary" element={<Diary />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/log-water" element={<LogWater />} /> {/* Moved from Full Screen Layout */}
+            {/* <Route path="/log-water" element={<LogWater />} /> Moved to Full Screen Layout */}
           </Route>
 
           {/* Full Screen Layout (No BottomNav) */}
           <Route element={<RequireAuth withShell={false}><Outlet /></RequireAuth>}>
             <Route path="/workout/session/:sessionId" element={<WorkoutSession />} /> {/* Full-screen workout */}
             <Route path="/add-food" element={<AddFood />} />
-            {/* <Route path="/log-water" element={<LogWater />} /> Removed from here */}
+            <Route path="/log-water" element={<LogWater />} />
             <Route path="/create-food" element={<CreateFood />} />
             <Route path="/create-recipe" element={<CreateRecipe />} />
             {/* <Route path="/create-meal" element={<CreateMealPage />} /> */}

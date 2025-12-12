@@ -10,7 +10,7 @@ import { useNutritionLabelOCR } from '../hooks/useNutritionLabelOCR';
 export function CreateFood() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { createCustomFood, updateCustomFood, allCustomFoods } = useFood();
+    const { createCustomFood, updateCustomFood, deleteCustomFood, allCustomFoods } = useFood();
 
     // Scanners
     const { fetchProduct, isLoading: isLookingUp } = useBarcodeLookup();
@@ -41,6 +41,7 @@ export function CreateFood() {
         // Metadata
         category: '',
         ingredient_type: '',
+        sub_category: '', // New field
         source: '',
         processing_level: '',
         tags: [] as string[],
@@ -86,6 +87,7 @@ export function CreateFood() {
                 barcode: editFood.barcode || '',
                 category: editFood.category || '',
                 ingredient_type: editFood.ingredient_type || '',
+                sub_category: editFood.sub_category || '',
                 source: editFood.source || '',
                 processing_level: editFood.processing_level || '',
                 tags: editFood.tags || [],
@@ -193,6 +195,7 @@ export function CreateFood() {
                 // Metadata
                 category: manualForm.category || undefined,
                 ingredient_type: manualForm.category === 'Ingredients' ? (manualForm.ingredient_type || 'Misc') : undefined,
+                sub_category: (manualForm.category === 'Ingredients' || manualForm.category === 'Fruit' || manualForm.category === 'Vegetable') ? manualForm.sub_category : undefined,
                 source: manualForm.source || undefined,
                 processing_level: manualForm.processing_level || undefined,
                 tags: manualForm.tags.length > 0 ? manualForm.tags : undefined,
@@ -215,8 +218,24 @@ export function CreateFood() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!isEditing || !editFood?.id) return;
+        if (!confirm("Are you sure you want to delete this food? This cannot be undone.")) return;
+
+        setIsSaving(true);
+        try {
+            await deleteCustomFood(editFood.id);
+            navigate(-1);
+        } catch (error) {
+            console.error("Failed to delete food:", error);
+            alert("Failed to delete food. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-[#0F0F0F] text-white p-4 safe-area-inset-bottom relative">
+        <div className="min-h-screen bg-[#141414] flex flex-col text-white ios-pwa-layout-fix p-4 safe-area-inset-bottom relative">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -236,6 +255,15 @@ export function CreateFood() {
                     <button onClick={() => setScanningMode('label')} className="p-2 bg-[#2A2A2A] rounded-lg hover:bg-[#333] transition-colors">
                         <svg className="w-5 h-5 text-[#3B82F6]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
+                    {(isEditing && editFood?.is_custom) && (
+                        <button
+                            onClick={handleDelete}
+                            disabled={isSaving}
+                            className="bg-[#2A2A2A] hover:bg-red-900/20 text-red-500 font-semibold px-3 py-1.5 rounded-lg ml-2 transition-all text-sm"
+                        >
+                            Delete
+                        </button>
+                    )}
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
@@ -291,8 +319,8 @@ export function CreateFood() {
                                     type="button"
                                     onClick={() => setServingUnit(unit.v as any)}
                                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${servingUnit === unit.v
-                                            ? 'bg-[#3B82F6] text-white'
-                                            : 'bg-[#2A2A2A] text-[#6B6B6B] hover:text-white'
+                                        ? 'bg-[#3B82F6] text-white'
+                                        : 'bg-[#2A2A2A] text-[#6B6B6B] hover:text-white'
                                         }`}
                                 >
                                     {unit.l}
@@ -403,13 +431,66 @@ export function CreateFood() {
                         <div className="animate-slide-up mt-4">
                             <label className="text-xs text-[#6B6B6B] mb-2 block">Ingredient Type</label>
                             <div className="flex flex-wrap gap-2">
-                                {['Protein', 'Dairy', 'Carbs', 'Fats', 'Condiments', 'Spices', 'Vegetables', 'Fruits', 'Misc'].map(type => (
+                                {['Protein', 'Dairy', 'Carbs', 'Fats', 'Condiments', 'Spices', 'Misc'].map(type => (
                                     <button
                                         key={type}
-                                        onClick={() => setManualForm(prev => ({ ...prev, ingredient_type: type }))}
+                                        onClick={() => {
+                                            // Auto-set default sub-category for types that have them
+                                            let defaultSub = '';
+                                            if (['Protein', 'Dairy', 'Carbs', 'Fats'].includes(type)) {
+                                                defaultSub = `All ${type}`;
+                                            }
+                                            setManualForm(prev => ({ ...prev, ingredient_type: type, sub_category: defaultSub }));
+                                        }}
                                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${manualForm.ingredient_type === type ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white'}`}
                                     >
                                         {type}
+                                    </button>
+                                ))}\n                            </div>\n                        </div>
+                    )}
+
+                    {/* Ingredient Sub-Type (2nd Level) */}
+                    {manualForm.category === 'Ingredients' && manualForm.ingredient_type && (
+                        (() => {
+                            let subtypes: string[] = [];
+                            if (manualForm.ingredient_type === 'Carbs') subtypes = ['All Carbs', 'Bread', 'Pasta', 'Tortillas', 'Grains'];
+                            if (manualForm.ingredient_type === 'Fats') subtypes = ['All Fats', 'Butter', 'Oil'];
+                            if (manualForm.ingredient_type === 'Dairy') subtypes = ['All Dairy', 'Milk', 'Cheese', 'Yogurt'];
+                            if (manualForm.ingredient_type === 'Protein') subtypes = ['All Protein', 'White Meat', 'Red Meat', 'Egg', 'Plant Protein'];
+
+                            if (subtypes.length === 0) return null;
+
+                            return (
+                                <div className="animate-slide-up mt-4 pl-4 border-l-2 border-[#2A2A2A]">
+                                    <label className="text-xs text-[#6B6B6B] mb-2 block">Specific Type</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {subtypes.map(sub => (
+                                            <button
+                                                key={sub}
+                                                onClick={() => setManualForm(prev => ({ ...prev, sub_category: sub }))}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${manualForm.sub_category === sub ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white'}`}
+                                            >
+                                                {sub}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()
+                    )}
+
+                    {/* Fruit & Vegetable Sub-Categories */}
+                    {(manualForm.category === 'Fruit' || manualForm.category === 'Vegetable') && (
+                        <div className="animate-slide-up mt-4">
+                            <label className="text-xs text-[#6B6B6B] mb-2 block">Type</label>
+                            <div className="flex flex-wrap gap-2">
+                                {['Fresh', 'Frozen', 'Dried', 'Canned'].map(sub => (
+                                    <button
+                                        key={sub}
+                                        onClick={() => setManualForm(prev => ({ ...prev, sub_category: sub }))}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${manualForm.sub_category === sub ? 'bg-[#3B82F6] text-white' : 'bg-[#2A2A2A] text-[#A1A1A1] hover:text-white'}`}
+                                    >
+                                        {sub}
                                     </button>
                                 ))}
                             </div>
@@ -484,14 +565,14 @@ export function CreateFood() {
                         <div className="animate-slide-up">
                             <label className="text-xs text-[#6B6B6B] mb-2 block">Snack Type</label>
                             <div className="flex flex-wrap gap-2">
-                                {['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Fruit', 'Nut', 'Vegetable', 'Yogurt', 'Other'].map(type => {
+                                {['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Nut', 'Other'].map(type => {
                                     const isActive = manualForm.tags.includes(type);
                                     return (
                                         <button
                                             key={type}
                                             onClick={() => {
                                                 setManualForm(prev => {
-                                                    const types = ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Fruit', 'Nut', 'Vegetable', 'Yogurt', 'Other'];
+                                                    const types = ['Chips', 'Cookies', 'Candy', 'Dessert', 'Protein Bar', 'Nut', 'Other']; // Removed Fruit, Vegetable, Yogurt
                                                     const newTags = prev.tags.filter(t => !types.includes(t));
                                                     if (!isActive) newTags.push(type);
                                                     return { ...prev, tags: newTags };

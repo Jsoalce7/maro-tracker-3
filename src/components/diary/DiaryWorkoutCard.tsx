@@ -184,7 +184,10 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
     };
 
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-[#131518] border border-[#262626] transition-all duration-300 h-full max-h-[450px] flex flex-col ring-1 ring-[#3B82F6]/50 hover:bg-[#1A1D21]">
+        <div className={`
+            relative overflow-visible rounded-[24px] bg-[#141414] border border-[#222] transition-all duration-300 flex flex-col
+            ${isExpanded ? 'ring-1 ring-[#333]' : 'hover:border-[#333]'}
+        `}>
             {/* Header */}
             <div
                 onClick={handleToggle}
@@ -193,35 +196,52 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
                 onTouchEnd={handleTouchEnd}
                 className="p-5 cursor-pointer flex-shrink-0"
             >
-                <div className="flex flex-wrap gap-4 items-center justify-between">
-                    <div className="flex items-center gap-4 min-w-0">
-                        {/* Icon */}
-                        <div className={`w - 12 h - 12 rounded - xl flex items - center justify - center border transition - colors flex - shrink - 0 ${isInProgress
-                            ? 'bg-amber-500/10 border-amber-500/20'
-                            : isCompleted
-                                ? 'bg-emerald-500/10 border-emerald-500/20'
-                                : 'bg-[#2A2A2A] border-[#333]'
-                            } `}>
-                            <svg className={`w - 6 h - 6 ${isInProgress ? 'text-amber-500' : isCompleted ? 'text-emerald-500' : 'text-[#8E8E93]'
-                                } `} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                        </div>
-
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[17px] font-bold text-white truncate">Workout</span>
-                            <span className="text-[13px] text-[#8E8E93] truncate">{templateName}</span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1 ml-auto sm:ml-0 mt-1 sm:mt-0">
-                        <StatusPill status={status} />
-                        {!isExpanded && (
-                            <div className="text-[11px] text-[#6B6B6B] flex items-center gap-2">
-                                {exerciseCount} Exercises {isCompleted && `• ${getDuration()} `}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* Top Row: Title & Action */}
+                    <div className="flex items-center justify-between md:justify-start md:gap-6 flex-1">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${isInProgress ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                                isCompleted ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                                    'bg-[#2A2A2A] border-[#333] text-[#8E8E93]'
+                                }`}>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
                             </div>
-                        )}
+                            <div>
+                                <h2 className="text-[17px] font-bold text-white tracking-tight leading-none">Workout</h2>
+                                <p className="text-[12px] text-[#666] font-medium mt-0.5 truncate max-w-[150px]">{templateName}</p>
+                            </div>
+                        </div>
+
+                        <div className="md:hidden">
+                            <StatusPill status={status} />
+                        </div>
                     </div>
+
+                    {/* Collapsed Summary */}
+                    {!isExpanded && (
+                        <div className="flex items-center justify-between md:justify-end gap-6 md:gap-8 flex-1 animate-in fade-in duration-200">
+                            <div className="flex items-center gap-6">
+                                <div className="flex flex-col md:items-end">
+                                    <span className="text-[20px] font-bold text-white tracking-tight leading-none">{exerciseCount}</span>
+                                    <span className="text-[10px] text-[#666] font-bold uppercase tracking-wider">Exercises</span>
+                                </div>
+                                {isCompleted && (
+                                    <>
+                                        <div className="w-px h-6 bg-[#2A2A2A]" />
+                                        <div className="flex flex-col md:items-end">
+                                            <span className="text-[20px] font-bold text-white tracking-tight leading-none">{getDuration().replace(' min', '')}</span>
+                                            <span className="text-[10px] text-[#666] font-bold uppercase tracking-wider">Mins</span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <div className="hidden md:block">
+                                <StatusPill status={status} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -271,11 +291,11 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
             {/* Content (Timeline) */}
             {isExpanded && (
                 <div className="flex-1 min-h-0 flex flex-col px-5 pb-5 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="h-px bg-[#262626] w-full mb-4 flex-shrink-0" />
+                    <div className="h-px bg-[#222] w-full mb-4 flex-shrink-0" />
 
                     <div className="mt-2 flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
-                        <div className="sticky top-0 bg-[#131518] z-10 pb-2">
-                            <h4 className="text-[10px] uppercase tracking-wider text-[#6B6B6B] font-bold mb-3">Timeline</h4>
+                        <div className="sticky top-0 bg-[#141414] z-10 pb-2">
+                            <h4 className="text-[10px] uppercase tracking-wider text-[#666] font-bold mb-3">Timeline</h4>
                         </div>
 
                         <div className="relative pl-3 space-y-0">
@@ -290,9 +310,9 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
                                     .map((ex: any) => (
                                         <div key={ex.id} className="relative flex items-start gap-4 py-2 group">
                                             {/* Dot */}
-                                            <div className="relative z-10 w-2 h-2 rounded-full mt-1.5 ring-4 ring-[#131518] transition-colors bg-[#333]"></div>
+                                            <div className="relative z-10 w-2 h-2 rounded-full mt-1.5 ring-4 ring-[#141414] transition-colors bg-[#333]"></div>
 
-                                            <div className="flex-1 -mt-1 p-2 rounded-lg hover:bg-[#1A1D21] transition-colors flex justify-between items-center">
+                                            <div className="flex-1 -mt-1 p-2 rounded-lg hover:bg-[#1A1A1A] transition-colors flex justify-between items-center">
                                                 <div>
                                                     <div className="text-[14px] font-bold text-white leading-tight">{ex.name}</div>
                                                     <div className="text-[11px] text-[#6B6B6B] mt-0.5">
@@ -305,17 +325,14 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
                             ) : (
                                 activeSession?.exercises?.map((ex: WorkoutExerciseSummary, idx: number) => {
                                     const completedSets = ex.setsCount; // Calculated on backend
-                                    const isStarted = completedSets > 0;
-
-                                    // if (!isStarted && !isCompleted) return null; // Show all? Let's show all for clarity or filter
 
                                     return (
                                         <div key={ex.id} className="relative flex items-start gap-4 py-2 group">
                                             {/* Dot */}
-                                            <div className={`relative z - 10 w - 2 h - 2 rounded - full mt - 1.5 ring - 4 ring - [#131518] transition - colors ${completedSets > 0 ? 'bg-[#3B82F6]' : 'bg-[#333]'
-                                                } `}></div>
+                                            <div className={`relative z-10 w-2 h-2 rounded-full mt-1.5 ring-4 ring-[#141414] transition-colors ${completedSets > 0 ? 'bg-[#3B82F6]' : 'bg-[#333]'
+                                                }`}></div>
 
-                                            <div className="flex-1 -mt-1 p-2 rounded-lg hover:bg-[#1A1D21] transition-colors flex justify-between items-center">
+                                            <div className="flex-1 -mt-1 p-2 rounded-lg hover:bg-[#1A1A1A] transition-colors flex justify-between items-center">
                                                 <div>
                                                     <div className="text-[14px] font-bold text-white leading-tight">{ex.name}</div>
                                                     <div className="text-[11px] text-[#6B6B6B] mt-0.5">
@@ -331,7 +348,7 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-4 pt-4 border-t border-[#262626] flex items-center justify-between flex-shrink-0">
+                    <div className="mt-4 pt-4 border-t border-[#222] flex items-center justify-between flex-shrink-0">
                         {isCompleted && activeSession.started_at && activeSession.ended_at ? (
                             <div className="flex gap-4 text-[11px] text-[#6B6B6B] font-medium font-mono">
                                 <span>Start {new Date(activeSession.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -376,12 +393,12 @@ export const DiaryWorkoutCard = ({ date, forceExpanded, onClickOverride }: Diary
 // --- Components ---
 
 const StatusPill = ({ status }: { status: { label: string, color: string } }) => (
-    <span className={`px - 2 py - 0.5 rounded text - [10px] font - bold border uppercase tracking - wider ${status.color} `}>
+    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${status.color}`}>
         {status.label}
     </span>
 );
 
 function getErrorFreeWeightRange(ex: WorkoutExerciseSummary) {
     if (!ex.minWeight || !ex.maxWeight) return "-";
-    return ex.minWeight === ex.maxWeight ? ex.minWeight : `${ex.minWeight} -${ex.maxWeight} `;
+    return ex.minWeight === ex.maxWeight ? ex.minWeight : `${ex.minWeight}-${ex.maxWeight}`;
 }

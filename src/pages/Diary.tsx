@@ -241,29 +241,34 @@ export function Diary() {
             <div className="px-4 md:px-6">
 
                 {/* --- LAYOUT 1: Mobile Stack (<768px) --- */}
+                {/* --- LAYOUT 1: Mobile Stack (<768px) --- */}
                 <div className="block md:hidden space-y-4">
                     {/* 1. Calendar + Weight (Top on Mobile) */}
-                    <Card className="p-4"><MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} /></Card>
+                    <MonthCalendar
+                        selectedDate={selectedDate}
+                        onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }}
+                        loggedDates={loggedDates}
+                        mobileCollapsible={true} // ENABLE mobile collapsible header
+                    />
                     <CompactWeightCard />
 
-                    {/* 2. Summaries */}
+                    {/* 2. Summaries - Mobile uses internal state for expansion (inline) */}
                     <DiaryMealsSummaryCard
                         entries={entries} totals={totals}
                         targets={{ calories: currentTargets.calories_per_day, protein: currentTargets.protein_g, carbs: currentTargets.carbs_g, fat: currentTargets.fat_g }}
                         onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
-                        forceExpanded={false}
-                        onClickOverride={() => setActiveDetail('meals')}
+                    // Mobile: Let it expand inline
                     />
-                    <DiaryWorkoutCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('workout')} />
-                    <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} onManage={() => navigate('/medications')} />
-                    <DiaryVitalsCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('vitals')} />
+                    <DiaryWorkoutCard date={selectedDate} />
+                    <DiaryMedicationCard date={selectedDate} onManage={() => navigate('/medications')} />
+                    <DiaryVitalsCard date={selectedDate} />
                 </div>
 
                 {/* --- LAYOUT 2: Tablet / Small Desktop (768px - 1100px) --- */}
                 <div className="hidden md:grid lg:hidden grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Col 1: Calendar + Weight */}
                     <div className="col-span-1 space-y-6">
-                        <Card className="p-4"><MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} /></Card>
+                        <MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} />
                         <CompactWeightCard />
                     </div>
                     {/* Col 2 (Span 2): Vertical Stack of Summary Cards */}
@@ -285,7 +290,7 @@ export function Diary() {
                 <div className="hidden lg:grid grid-cols-3 gap-6">
                     {/* Col 1: Calendar + Weight */}
                     <div className="space-y-6">
-                        <Card className="p-4"><MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} /></Card>
+                        <MonthCalendar selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); navigate(`/diary?date=${date}`); }} loggedDates={loggedDates} />
                         <CompactWeightCard />
                     </div>
                     {/* Col 2: Meals + Meds */}
@@ -294,14 +299,28 @@ export function Diary() {
                             entries={entries} totals={totals}
                             targets={{ calories: currentTargets.calories_per_day, protein: currentTargets.protein_g, carbs: currentTargets.carbs_g, fat: currentTargets.fat_g }}
                             onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
-                        // Default behavior (internal state)
+                            forceExpanded={false}
+                            onClickOverride={() => setActiveDetail('meals')}
                         />
-                        <DiaryMedicationCard date={selectedDate} onManage={() => navigate('/medications')} />
+                        <DiaryMedicationCard
+                            date={selectedDate}
+                            forceExpanded={false}
+                            onClickOverride={() => setActiveDetail('medication')}
+                            onManage={() => navigate('/medications')}
+                        />
                     </div>
                     {/* Col 3: Workout + Vitals */}
                     <div className="space-y-6">
-                        <DiaryWorkoutCard date={selectedDate} />
-                        <DiaryVitalsCard date={selectedDate} />
+                        <DiaryWorkoutCard
+                            date={selectedDate}
+                            forceExpanded={false}
+                            onClickOverride={() => setActiveDetail('workout')}
+                        />
+                        <DiaryVitalsCard
+                            date={selectedDate}
+                            forceExpanded={false}
+                            onClickOverride={() => setActiveDetail('vitals')}
+                        />
                     </div>
                 </div>
 

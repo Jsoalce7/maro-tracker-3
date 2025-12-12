@@ -3,6 +3,8 @@ import { EditEntryModal } from '../components/nutrition/EditEntryModal';
 import { GlobalActionModal } from '../components/navigation/GlobalActionModal';
 import { CompactMealCard } from '../components/nutrition/CompactMealCard';
 import { DailyNutritionCard } from '../components/nutrition/DailyNutritionCard';
+import { CompactWeightCard } from '../components/weight/CompactWeightCard';
+import { DiaryMedicationCard } from '../components/diary/DiaryMedicationCard';
 import { useAppStore } from '../stores/appStore';
 import { useProfile } from '../hooks/useProfile';
 import { useNutrition } from '../hooks/useNutrition';
@@ -170,11 +172,13 @@ export function Home() {
             </header>
 
             {/* Main Content */}
-            <div className="px-4 space-y-4 pb-32">
-                {/* Content Grid: Daily Nutrition + Meals */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Col 1: Daily Nutrition Card */}
-                    <div className="w-full">
+            <div className="px-4 pb-32">
+                {/* Responsive Grid: 1 Col on Mobile, 2 Cols on Tablet+ */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    {/* LEFT COLUMN: Daily Stats + Meals */}
+                    <div className="space-y-6">
+                        {/* 1. Daily Nutrition Card */}
                         <DailyNutritionCard
                             calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
                             protein={{ consumed: totals.protein, target: currentTargets.protein_g }}
@@ -183,28 +187,38 @@ export function Home() {
                             water={totals.water}
                             caffeine={totals.caffeine}
                         />
+
+                        {/* 2. Meals Section */}
+                        <section className="space-y-3">
+                            <h2 className="text-lg font-semibold text-white">Meals</h2>
+
+                            {/* Meals Grid: 2x2 on all screens */}
+                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
+                                    <CompactMealCard
+                                        key={mealType}
+                                        type={mealType}
+                                        entries={entries[mealType]}
+                                        totalCalories={getMealCalories(mealType)}
+                                        onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
+                                        onEditEntry={handleEditGroup}
+                                        onMoveEntry={handleMoveEntry}
+                                        onSaveAsMyMeal={(entries) => handleSaveAsMyMeal(entries, mealType)}
+                                    />
+                                ))}
+                            </div>
+                        </section>
                     </div>
 
-                    {/* Col 2: Meals Section */}
-                    <section className="space-y-3">
-                        <h2 className="text-lg font-semibold text-white">Meals</h2>
+                    {/* RIGHT COLUMN: Weight + Medications (Hidden on Mobile) */}
+                    <div className="hidden md:flex flex-col gap-6">
+                        <CompactWeightCard />
+                        <DiaryMedicationCard
+                            date={today}
+                            onManage={() => navigate('/medications')}
+                        />
+                    </div>
 
-                        {/* Meals Grid: 2x2 on all screens */}
-                        <div className="grid grid-cols-2 gap-3 md:gap-4">
-                            {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                                <CompactMealCard
-                                    key={mealType}
-                                    type={mealType}
-                                    entries={entries[mealType]}
-                                    totalCalories={getMealCalories(mealType)}
-                                    onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                                    onEditEntry={handleEditGroup}
-                                    onMoveEntry={handleMoveEntry}
-                                    onSaveAsMyMeal={(entries) => handleSaveAsMyMeal(entries, mealType)}
-                                />
-                            ))}
-                        </div>
-                    </section>
                 </div>
             </div>
 

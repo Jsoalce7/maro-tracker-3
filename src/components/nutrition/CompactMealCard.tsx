@@ -4,7 +4,7 @@ import { MealType, FoodEntry } from '../../types';
 import { formatQuantity } from '../../lib/format';
 import { MealDetailModal } from './MealDetailModal';
 import { MoveEntriesModal } from './MoveEntriesModal';
-import { MacroRing } from './MacroRing';
+
 
 interface CompactMealCardProps {
     type: MealType;
@@ -65,69 +65,86 @@ export function CompactMealCard({
                         e.preventDefault();
                         setShowMenu(true);
                     }}
-                    className="bg-[#131518] border border-[#262626] rounded-[20px] p-4 cursor-pointer hover:bg-[#1A1D21] transition-colors relative overflow-hidden flex flex-row items-center justify-between h-[130px] w-full"
+                    className="bg-[#141414] border border-[#222] rounded-[24px] p-5 cursor-pointer hover:border-[#333] active:scale-[0.99] transition-all duration-200 relative overflow-visible flex flex-col justify-between h-[140px] w-full shadow-sm"
                 >
-                    {/* Left Side: Title & Macros */}
-                    <div className="flex flex-col justify-between h-full">
-                        <div>
-                            <h3 className="text-[17px] font-bold text-white capitalize mb-0.5">{mealLabels[type]}</h3>
-                            <div className="text-[12px] text-[#8E8E93]">
-                                {entries.length} {entries.length === 1 ? 'item' : 'items'}
+                    {/* Header: Title & Count & Kcal */}
+                    <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2.5">
+                            <h3 className="text-[17px] font-semibold text-white tracking-tight leading-none capitalize">{mealLabels[type]}</h3>
+                            <div className={`px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase ${entries.length > 0 ? 'bg-[#2A2A2A] text-[#A1A1A1]' : 'bg-[#1A1A1A] text-[#444]'}`}>
+                                {entries.length} {entries.length === 1 ? 'Item' : 'Items'}
                             </div>
                         </div>
+                        {/* Big Kcal Display */}
+                        <div className="text-[20px] font-bold text-white tracking-tight leading-none mr-8">
+                            {Math.round(totalCalories)}
+                        </div>
+                    </div>
 
-                        {macrosLayout === 'row' ? (
-                            <div className="flex items-center gap-3 mt-1">
-                                <span className="text-[12px] text-[#8E8E93] font-medium">
-                                    <span className="text-[#FF4C4C] font-semibold">Pro</span> {Math.round(entries.reduce((s, e) => s + e.protein, 0))}g
-                                </span>
-                                <span className="text-[12px] text-[#6B6B6B]">•</span>
-                                <span className="text-[12px] text-[#8E8E93] font-medium">
-                                    <span className="text-[#4CD964] font-semibold">Carbs</span> {Math.round(entries.reduce((s, e) => s + e.carbs, 0))}g
-                                </span>
-                                <span className="text-[12px] text-[#6B6B6B]">•</span>
-                                <span className="text-[12px] text-[#8E8E93] font-medium">
-                                    <span className="text-[#FFC44D] font-semibold">Fat</span> {Math.round(entries.reduce((s, e) => s + e.fat, 0))}g
-                                </span>
+                    {/* Segmented Bar Calculation */}
+                    {(() => {
+                        const pCals = entries.reduce((s, e) => s + e.protein, 0) * 4;
+                        const cCals = entries.reduce((s, e) => s + e.carbs, 0) * 4;
+                        const fCals = entries.reduce((s, e) => s + e.fat, 0) * 9;
+                        const totalCalcCals = pCals + cCals + fCals || 1;
+
+                        const pPct = (pCals / totalCalcCals) * 100;
+                        const cPct = (cCals / totalCalcCals) * 100;
+                        const fPct = (fCals / totalCalcCals) * 100;
+
+                        return (
+                            <div className="w-full h-1.5 flex rounded-full overflow-hidden bg-[#2A2A2A] my-3">
+                                {entries.length > 0 && (
+                                    <>
+                                        {/* Fat (Yellow) */}
+                                        <div style={{ width: `${fPct}%` }} className="h-full bg-[#FFC44D]" />
+                                        {/* Carbs (Green) */}
+                                        <div style={{ width: `${cPct}%` }} className="h-full bg-[#4CD964]" />
+                                        {/* Protein (Red) */}
+                                        <div style={{ width: `${pPct}%` }} className="h-full bg-[#FF4C4C]" />
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })()}
+
+                    {/* Data Row */}
+                    <div className="flex items-end justify-between w-full mt-auto">
+                        {/* Horizontal Macros */}
+                        {entries.length > 0 ? (
+                            <div className="flex items-center gap-4">
+                                {/* Protein */}
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF4C4C]"></div>
+                                    <span className="text-[13px] font-medium text-[#8E8E93]"><span className="text-white font-bold">{Math.round(entries.reduce((s, e) => s + e.protein, 0))}g</span> P</span>
+                                </div>
+                                {/* Carbs */}
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#4CD964]"></div>
+                                    <span className="text-[13px] font-medium text-[#8E8E93]"><span className="text-white font-bold">{Math.round(entries.reduce((s, e) => s + e.carbs, 0))}g</span> C</span>
+                                </div>
+                                {/* Fat */}
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#FFC44D]"></div>
+                                    <span className="text-[13px] font-medium text-[#8E8E93]"><span className="text-white font-bold">{Math.round(entries.reduce((s, e) => s + e.fat, 0))}g</span> F</span>
+                                </div>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[12px] text-[#FF4C4C] font-semibold">Protein</span>
-                                    <span className="text-[12px] text-white font-bold">{Math.round(entries.reduce((s, e) => s + e.protein, 0))}g</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[12px] text-[#4CD964] font-semibold">Carbs</span>
-                                    <span className="text-[12px] text-white font-bold">{Math.round(entries.reduce((s, e) => s + e.carbs, 0))}g</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[12px] text-[#FFC44D] font-semibold">Fat</span>
-                                    <span className="text-[12px] text-white font-bold">{Math.round(entries.reduce((s, e) => s + e.fat, 0))}g</span>
-                                </div>
+                            /* Empty State */
+                            <div className="flex items-center gap-2 opacity-50">
+                                <span className="text-[13px] text-[#666] font-medium italic">No items logged</span>
                             </div>
                         )}
                     </div>
-
-                    {/* Right Side: Ring */}
-                    <div className="pr-3 flex items-center justify-center">
-                        <MacroRing
-                            calories={totalCalories}
-                            protein={entries.reduce((s, e) => s + e.protein, 0)}
-                            carbs={entries.reduce((s, e) => s + e.carbs, 0)}
-                            fat={entries.reduce((s, e) => s + e.fat, 0)}
-                            size={64}
-                            strokeWidth={6}
-                        />
-                    </div>
                 </div>
 
-                {/* More Button (Visible on hover or mobile always?) */}
+                {/* Menu Button (Absolute Top Right) */}
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(!showMenu);
                     }}
-                    className="absolute top-3 right-3 p-1.5 text-[#6B6B6B] hover:text-white rounded-full hover:bg-white/10 z-10"
+                    className="absolute top-4 right-4 p-1.5 text-[#444] hover:text-white rounded-full hover:bg-white/5 transition-colors z-10"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />

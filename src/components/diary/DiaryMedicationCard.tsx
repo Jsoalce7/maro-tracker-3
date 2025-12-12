@@ -70,72 +70,87 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride, onMa
 
     return (
         <div className={`
-            relative overflow-hidden rounded-2xl bg-[#131518] border border-[#262626] transition-all duration-300 h-full max-h-[450px] flex flex-col
-            ${isExpanded ? 'ring-1 ring-[#3B82F6]/50' : 'hover:bg-[#1A1D21]'}
+            relative overflow-visible rounded-[24px] bg-[#141414] border border-[#222] transition-all duration-300 flex flex-col
+            ${isExpanded ? 'ring-1 ring-[#333]' : 'hover:border-[#333]'}
         `}>
             {/* Header */}
             <div
                 onClick={handleToggle}
                 className="p-5 cursor-pointer flex-shrink-0"
             >
-                <div className="flex flex-wrap gap-4 items-center justify-between">
-                    <div className="flex items-center gap-4 min-w-0">
-                        {/* Icon */}
-                        <div className="w-12 h-12 rounded-xl bg-[#2A2A2A] border border-[#333] flex items-center justify-center flex-shrink-0">
-                            <svg className="w-6 h-6 text-[#8E8E93]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                            </svg>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* Top Row */}
+                    <div className="flex items-center justify-between md:justify-start md:gap-6 flex-1">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#2A2A2A] flex items-center justify-center">
+                                <span className="text-xl">💊</span>
+                            </div>
+                            <div>
+                                <h2 className="text-[17px] font-bold text-white tracking-tight leading-none">Medication</h2>
+                                <p className="text-[12px] text-[#666] font-medium mt-0.5">Today's doses</p>
+                            </div>
                         </div>
-
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[17px] font-bold text-white truncate">Medication</span>
-                            <span className="text-[13px] text-[#8E8E93] truncate">Today's doses</span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1 ml-auto sm:ml-0 mt-1 sm:mt-0">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${cardStatus.color}`}>
-                            {cardStatus.label}
-                        </span>
-                        {!isExpanded && (
-                            <span className="text-[11px] text-[#6B6B6B]">
-                                {stats.taken}/{stats.total} taken • {stats.due} due
+                        <div className="md:hidden">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${cardStatus.color}`}>
+                                {cardStatus.label}
                             </span>
-                        )}
+                        </div>
                     </div>
+
+                    {/* Collapsed Summary */}
+                    {!isExpanded && (
+                        <div className="flex items-center justify-between md:justify-end gap-6 md:gap-8 flex-1 animate-in fade-in duration-200">
+                            <div className="flex items-center gap-6">
+                                <div className="flex flex-col md:items-end">
+                                    <span className="text-[20px] font-bold text-white tracking-tight leading-none">{stats.taken}</span>
+                                    <span className="text-[10px] text-[#666] font-bold uppercase tracking-wider">Taken</span>
+                                </div>
+                                <div className="w-px h-6 bg-[#2A2A2A]" />
+                                <div className="flex flex-col md:items-end">
+                                    <span className="text-[20px] font-bold text-[#666] tracking-tight leading-none">{stats.due}</span>
+                                    <span className="text-[10px] text-[#666] font-bold uppercase tracking-wider">Due</span>
+                                </div>
+                            </div>
+                            <div className="hidden md:block">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${cardStatus.color}`}>
+                                    {cardStatus.label}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Expanded Content */}
             {isExpanded && (
                 <div className="flex-1 min-h-0 flex flex-col px-5 pb-5 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="h-px bg-[#262626] w-full mb-4 flex-shrink-0" />
+                    <div className="h-px bg-[#222] w-full mb-4 flex-shrink-0" />
 
-                    <h4 className="text-[10px] uppercase tracking-wider text-[#6B6B6B] font-bold mb-3 flex-shrink-0">Today</h4>
+                    <h4 className="text-[10px] uppercase tracking-wider text-[#666] font-bold mb-3 flex-shrink-0">Schedule</h4>
 
                     {/* Doses List (Scrollable) */}
                     <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                         {doses.length === 0 && (
                             <div className="text-center py-8">
-                                <p className="text-[#6B6B6B] text-sm">No medications scheduled.</p>
+                                <p className="text-[#444] text-sm italic">No medications scheduled.</p>
                             </div>
                         )}
                         {doses.map(dose => (
                             <div
                                 key={dose.id}
                                 onClick={(e) => { e.stopPropagation(); handleDoseClick(dose); }}
-                                className="flex items-center justify-between p-3 rounded-xl bg-[#1A1D21] border border-[#2A2A2A] hover:bg-[#202428] cursor-pointer transition-colors group"
+                                className="flex items-center justify-between p-3 rounded-xl bg-[#1A1A1A] border border-[#262626] hover:bg-[#222] cursor-pointer transition-colors group"
                             >
                                 {/* Left: Info */}
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <div className="text-[14px] font-bold text-white">{dose.medication.name}</div>
-                                        {dose.medication.brand && <span className="text-[10px] text-[#5C5C5E] border border-[#3C3C3E] rounded px-1">{dose.medication.brand}</span>}
-                                        <div className="text-[#6B6B6B] font-normal text-xs">• {dose.time_display}</div>
+                                        {dose.medication.brand && <span className="text-[10px] text-[#666] border border-[#333] rounded px-1.5 py-0.5">{dose.medication.brand}</span>}
                                     </div>
-                                    <div className="text-[11px] text-[#8E8E93]">
-                                        {dose.medication.strength_value} {dose.medication.strength_unit}
-                                        {dose.schedule?.anchor && dose.schedule.anchor !== 'None' && ` • ${dose.schedule.anchor}`}
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[11px] text-[#888] font-medium">{dose.medication.strength_value} {dose.medication.strength_unit}</span>
+                                        <span className="text-[11px] text-[#444]">•</span>
+                                        <span className="text-[11px] text-[#888] font-medium">{dose.time_display}</span>
                                     </div>
                                 </div>
 
@@ -144,7 +159,7 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride, onMa
                                     {dose.status === 'due' && (
                                         <button
                                             onClick={(e) => handleMarkMissed(e, dose)}
-                                            className="opacity-0 group-hover:opacity-100 px-2 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded text-[9px] font-bold uppercase transition-all"
+                                            className="opacity-0 group-hover:opacity-100 px-2 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg text-[9px] font-bold uppercase transition-all"
                                         >
                                             Miss
                                         </button>
@@ -158,9 +173,9 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride, onMa
                     </div>
 
                     {/* Footer - Fixed */}
-                    <div className="mt-4 pt-4 border-t border-[#262626] flex items-center justify-between flex-shrink-0">
+                    <div className="mt-4 pt-4 border-t border-[#222] flex items-center justify-between flex-shrink-0">
                         <div className="flex flex-col">
-                            <span className="text-[11px] text-[#6B6B6B] font-medium">{getNextDoseText()}</span>
+                            <span className="text-[11px] text-[#666] font-medium">{getNextDoseText()}</span>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -171,7 +186,7 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride, onMa
                                 Manage schedule
                             </button>
                         </div>
-                        <div className="text-[11px] text-[#6B6B6B] font-bold">
+                        <div className="text-[11px] text-[#666] font-bold">
                             {stats.taken} / {stats.total} taken
                         </div>
                     </div>
@@ -185,25 +200,25 @@ function StatusButton({ status, isPrn }: { status: MedicationDoseStatus, isPrn?:
     switch (status) {
         case 'taken':
             return (
-                <span className="px-2.5 py-1 rounded-md bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 text-[10px] font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider">
                     {isPrn ? 'Taken (PRN)' : 'Taken'}
                 </span>
             );
         case 'missed':
             return (
-                <span className="px-2.5 py-1 rounded-md bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-bold uppercase tracking-wider">
                     Missed
                 </span>
             );
         case 'skipped':
             return (
-                <span className="px-2.5 py-1 rounded-md bg-gray-500/10 text-gray-500 border border-gray-500/20 text-[10px] font-bold uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-lg bg-zinc-500/10 text-zinc-500 border border-zinc-500/20 text-[10px] font-bold uppercase tracking-wider">
                     Skipped
                 </span>
             );
         default:
             return (
-                <span className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider transition-colors bg-[#2A2A2A] text-[#8E8E93] border-[#333] group-hover:bg-[#333]`}>
+                <span className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-colors bg-[#262626] text-[#888] border-[#333] group-hover:bg-[#333] group-hover:text-white`}>
                     Due
                 </span>
             );

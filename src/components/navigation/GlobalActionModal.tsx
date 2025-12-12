@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -12,6 +12,14 @@ interface GlobalActionModalProps {
 export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts, onManageMedications }: GlobalActionModalProps) {
     const navigate = useNavigate();
     const [mode, setMode] = useState<'log' | 'manage'>('log');
+
+    // Manage Body Scroll & Nav Visibility
+    useEffect(() => {
+        document.body.classList.add('modal-open');
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
+    }, []); // Run on mount/unmount
 
     const handleAction = (action: string) => {
         onClose(); // Close modal first
@@ -29,13 +37,23 @@ export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts, o
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] animate-in fade-in duration-200">
+            {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative z-10 bg-[#141414] w-full max-w-sm rounded-3xl p-5 space-y-5 border border-[#2A2A2A] shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
+            {/* Modal Container: Centered on Mobile using Transforms */}
+            <div
+                className="absolute w-full max-w-sm p-5 bg-[#141414] rounded-3xl border border-[#2A2A2A] shadow-2xl animate-in zoom-in-95 duration-200"
+                style={{
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    maxHeight: '90vh' // Safety
+                }}
+            >
 
                 {/* Header & Toggle */}
-                <div className="space-y-4">
+                <div className="space-y-4 mb-5">
                     <h3 className="text-white font-bold text-center text-lg">
                         {mode === 'log' ? 'What do you want to log?' : 'What do you want to manage?'}
                     </h3>
@@ -59,7 +77,7 @@ export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts, o
                 </div>
 
                 {/* List Items */}
-                <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto custom-scrollbar mb-4">
                     {mode === 'log' ? (
                         <>
                             <div className="space-y-1">

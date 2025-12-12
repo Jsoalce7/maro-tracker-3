@@ -84,52 +84,71 @@ export function DiaryVitalsCard({ date, forceExpanded, onClickOverride }: DiaryV
 
     return (
         <div className={`
-            relative overflow-hidden rounded-2xl bg-[#131518] border border-[#262626] transition-all duration-300 h-full max-h-[450px] flex flex-col
-            ${isExpanded ? 'ring-1 ring-[#3B82F6]/50' : 'hover:bg-[#1A1D21]'}
+            relative overflow-visible rounded-[24px] bg-[#141414] border border-[#222] transition-all duration-300 flex flex-col
+            ${isExpanded ? 'ring-1 ring-[#333]' : 'hover:border-[#333]'}
         `}>
             {/* Header */}
             <div
                 onClick={handleToggle}
                 className="p-5 cursor-pointer flex-shrink-0"
             >
-                <div className="flex flex-wrap gap-4 items-center justify-between">
-                    <div className="flex items-center gap-4 min-w-0">
-                        {/* Icon */}
-                        <div className="w-12 h-12 rounded-xl bg-[#2A2A2A] border border-[#333] flex items-center justify-center flex-shrink-0">
-                            <svg className="w-6 h-6 text-[#ef4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    {/* Top Row */}
+                    <div className="flex items-center justify-between md:justify-start md:gap-6 flex-1">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#2A2A2A] flex items-center justify-center">
+                                <span className="text-xl">❤️</span>
+                            </div>
+                            <div>
+                                <h2 className="text-[17px] font-bold text-white tracking-tight leading-none">Vitals</h2>
+                                <p className="text-[12px] text-[#666] font-medium mt-0.5">Summary</p>
+                            </div>
                         </div>
-
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[17px] font-bold text-white truncate">Vitals</span>
-                            <span className="text-[13px] text-[#8E8E93] truncate">Blood Pressure • Glucose</span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1 ml-auto sm:ml-0 mt-1 sm:mt-0">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ${statusUI.color}`}>
-                            {statusUI.label}
-                        </span>
-                        {!isExpanded && (
-                            <span className="text-[11px] text-[#6B6B6B]">
-                                BP: {latestBP ? `${latestBP.systolic}/${latestBP.diastolic}` : '-'} • Glu: {latestGlucose ? latestGlucose.value : '-'}
+                        <div className="md:hidden">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusUI.color}`}>
+                                {statusUI.label}
                             </span>
-                        )}
+                        </div>
                     </div>
+
+                    {/* Collapsed Summary */}
+                    {!isExpanded && (
+                        <div className="flex items-center justify-between md:justify-end gap-6 md:gap-8 flex-1 animate-in fade-in duration-200">
+                            <div className="flex items-center gap-6">
+                                <div className="flex flex-col md:items-end">
+                                    <span className="text-[16px] font-bold text-white tracking-tight leading-none">
+                                        {latestBP ? `${latestBP.systolic}/${latestBP.diastolic}` : '-'}
+                                    </span>
+                                    <span className="text-[10px] text-[#666] font-bold uppercase tracking-wider">BP</span>
+                                </div>
+                                <div className="w-px h-6 bg-[#2A2A2A]" />
+                                <div className="flex flex-col md:items-end">
+                                    <span className="text-[16px] font-bold text-white tracking-tight leading-none">
+                                        {latestGlucose ? latestGlucose.value : '-'}
+                                    </span>
+                                    <span className="text-[10px] text-[#666] font-bold uppercase tracking-wider">Glucose</span>
+                                </div>
+                            </div>
+                            <div className="hidden md:block">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusUI.color}`}>
+                                    {statusUI.label}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Expanded Content */}
             {isExpanded && (
                 <div className="flex-1 min-h-0 flex flex-col px-5 pb-5 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="h-px bg-[#262626] w-full mb-4 flex-shrink-0" />
+                    <div className="h-px bg-[#222] w-full mb-4 flex-shrink-0" />
 
                     <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
                         {/* BP Section */}
                         <div className="mb-6">
                             <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-[10px] uppercase tracking-wider text-[#6B6B6B] font-bold">Blood Pressure</h4>
+                                <h4 className="text-[10px] uppercase tracking-wider text-[#666] font-bold">Blood Pressure</h4>
                                 <button className="text-[10px] text-[#3B82F6] font-bold hover:text-[#60A5FA]">Log</button>
                             </div>
 
@@ -144,12 +163,12 @@ export function DiaryVitalsCard({ date, forceExpanded, onClickOverride }: DiaryV
                                     const s = getBPStatus(entry.systolic, entry.diastolic);
                                     const ui = getStatusUI(s);
                                     return (
-                                        <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#1A1D21] border border-transparent hover:border-[#2A2A2A] transition-colors">
+                                        <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[#1A1A1A] border border-[#262626] hover:bg-[#222] hover:border-[#333] transition-colors">
                                             <div>
                                                 <div className="text-[14px] font-bold text-white leading-tight">
-                                                    {entry.systolic} <span className="text-[#6B6B6B] text-[11px] font-normal">/</span> {entry.diastolic} <span className="text-[#6B6B6B] text-[10px] font-normal">mmHg</span>
+                                                    {entry.systolic} <span className="text-[#666] text-[11px] font-normal">/</span> {entry.diastolic} <span className="text-[#666] text-[10px] font-normal">mmHg</span>
                                                 </div>
-                                                <div className="text-[10px] text-[#6B6B6B] mt-0.5">{entry.note}</div>
+                                                <div className="text-[10px] text-[#666] mt-0.5">{entry.note}</div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <span className="text-[10px] text-[#444] font-mono">{entry.time}</span>
@@ -164,7 +183,7 @@ export function DiaryVitalsCard({ date, forceExpanded, onClickOverride }: DiaryV
                         {/* Glucose Section */}
                         <div className="mb-2">
                             <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-[10px] uppercase tracking-wider text-[#6B6B6B] font-bold">Glucose</h4>
+                                <h4 className="text-[10px] uppercase tracking-wider text-[#666] font-bold">Glucose</h4>
                                 <button className="text-[10px] text-[#3B82F6] font-bold hover:text-[#60A5FA]">Log</button>
                             </div>
 
@@ -172,12 +191,12 @@ export function DiaryVitalsCard({ date, forceExpanded, onClickOverride }: DiaryV
                                 {MOCK_GLUCOSE.map(entry => {
                                     const s = getGlucoseStatus(entry.value);
                                     return (
-                                        <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-[#1A1D21] border border-transparent hover:border-[#2A2A2A] transition-colors">
+                                        <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[#1A1A1A] border border-[#262626] hover:bg-[#222] hover:border-[#333] transition-colors">
                                             <div>
                                                 <div className="text-[14px] font-bold text-white leading-tight">
-                                                    {entry.value} <span className="text-[#6B6B6B] text-[10px] font-normal">{entry.unit}</span>
+                                                    {entry.value} <span className="text-[#666] text-[10px] font-normal">{entry.unit}</span>
                                                 </div>
-                                                <div className="text-[10px] text-[#6B6B6B] mt-0.5">{entry.note}</div>
+                                                <div className="text-[10px] text-[#666] mt-0.5">{entry.note}</div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <span className="text-[10px] text-[#444] font-mono">{entry.time}</span>
@@ -191,16 +210,16 @@ export function DiaryVitalsCard({ date, forceExpanded, onClickOverride }: DiaryV
                     </div>
 
                     {/* Footer - Fixed */}
-                    <div className="mt-4 pt-4 border-t border-[#262626] flex items-center justify-between flex-shrink-0">
+                    <div className="mt-4 pt-4 border-t border-[#222] flex items-center justify-between flex-shrink-0">
                         <div className="flex flex-col gap-0.5">
                             {latestBP && (
-                                <span className="text-[10px] text-[#6B6B6B]">Last BP: <span className="text-white">{latestBP.systolic}/{latestBP.diastolic}</span> at {latestBP.time}</span>
+                                <span className="text-[10px] text-[#666]">Last BP: <span className="text-white">{latestBP.systolic}/{latestBP.diastolic}</span> at {latestBP.time}</span>
                             )}
                             {latestGlucose && (
-                                <span className="text-[10px] text-[#6B6B6B]">Last Glucose: <span className="text-white">{latestGlucose.value}</span> at {latestGlucose.time}</span>
+                                <span className="text-[10px] text-[#666]">Last Glucose: <span className="text-white">{latestGlucose.value}</span> at {latestGlucose.time}</span>
                             )}
                         </div>
-                        <button className="text-[10px] text-[#444] hover:text-[#888] font-bold border border-[#2A2A2A] rounded-lg px-2 py-1 transition-colors">
+                        <button className="text-[10px] text-[#444] hover:text-[#888] font-bold border border-[#222] hover:border-[#333] rounded-lg px-2 py-1 transition-colors">
                             Manage devices
                         </button>
                     </div>

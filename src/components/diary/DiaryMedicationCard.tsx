@@ -1,36 +1,22 @@
 import { useState } from 'react';
-
-// --- Types ---
-type DoseStatus = 'due' | 'taken' | 'missed';
-
-interface MedicationDose {
-    id: string;
-    name: string;
-    dosage: string;
-    instruction: string; // e.g. "with breakfast"
-    time: string; // e.g. "08:00 AM"
-    status: DoseStatus;
-    takenAt?: string; // e.g. "08:05 AM"
-}
-
-// --- Mock Data ---
-const MOCK_DOSES: MedicationDose[] = [
-    { id: '1', name: 'Metformin', dosage: '500 mg', instruction: 'with breakfast', time: '08:00 AM', status: 'taken', takenAt: '08:15 AM' },
-    { id: '2', name: 'Vitamin D', dosage: '2000 IU', instruction: 'daily', time: '08:00 AM', status: 'taken', takenAt: '08:15 AM' },
-    { id: '3', name: 'Omega-3', dosage: '1 capsule', instruction: 'with lunch', time: '12:00 PM', status: 'taken', takenAt: '12:30 PM' },
-    { id: '4', name: 'Metformin', dosage: '500 mg', instruction: 'with dinner', time: '07:00 PM', status: 'due' },
-    { id: '5', name: 'Magnesium', dosage: '400 mg', instruction: 'before bed', time: '10:00 PM', status: 'due' },
-];
+import { useNavigate } from 'react-router-dom';
+import { useMedication } from '../../hooks/useMedication';
+import { MedicationDose, MedicationDoseStatus } from '../../types/medication';
 
 interface DiaryMedicationCardProps {
     date: string;
     forceExpanded?: boolean;
     onClickOverride?: () => void;
+    onManage?: () => void;
 }
 
-export function DiaryMedicationCard({ date, forceExpanded, onClickOverride }: DiaryMedicationCardProps) {
+export function DiaryMedicationCard({ date, forceExpanded, onClickOverride, onManage }: DiaryMedicationCardProps) {
+    const navigate = useNavigate();
     const [isExpandedLocal, setIsExpandedLocal] = useState(false);
     const isExpanded = forceExpanded !== undefined ? forceExpanded : isExpandedLocal;
+
+    // Real Hook
+    const { doses, stats, logDose, deleteLog } = useMedication(date);
 
     const handleToggle = () => {
         if (onClickOverride) {
@@ -40,47 +26,46 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride }: Di
         setIsExpandedLocal(!isExpandedLocal);
     };
 
-    const [doses, setDoses] = useState<MedicationDose[]>(MOCK_DOSES);
-
-    // --- Derived Logic ---
-    const totalDoses = doses.length;
-    const takenCount = doses.filter(d => d.status === 'taken').length;
-    const missedCount = doses.filter(d => d.status === 'missed').length;
-    const dueCount = doses.filter(d => d.status === 'due').length;
-
     // --- Status Helpers ---
     const getCardStatus = () => {
-        if (missedCount > 0) return { label: `${missedCount} Missed`, color: 'text-red-400 bg-red-500/10 border-red-500/20' };
-        if (dueCount > 0) return { label: `${dueCount} Due`, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
-        return { label: 'All Taken', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+        if (stats.missed > 0) return { label: `${stats.missed} Missed`, color: 'text-red-400 bg-red-500/10 border-red-500/20' };
+        if (stats.due > 0) return { label: `${stats.due} Due`, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
+        if (stats.total > 0 && stats.taken === stats.total) return { label: 'All Taken', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+        if (stats.total === 0) return { label: 'No Meds', color: 'text-[#6B6B6B] bg-[#2A2A2A] border-[#333]' };
+        return { label: 'Unknown', color: 'text-[#6B6B6B]' };
     };
 
     const cardStatus = getCardStatus();
 
     const getNextDoseText = () => {
         const next = doses.find(d => d.status === 'due');
-        if (next) return `Next: ${next.name} at ${next.time}`;
+        if (next) return `Next: ${next.medication.name} at ${next.time_display}`;
+        if (stats.total === 0) return "No medications scheduled";
         return "All meds taken for today 🎉";
     };
 
     // --- Handlers ---
-    const toggleDoseStatus = (id: string, currentStatus: DoseStatus) => {
-        // Simple toggle for demo: Due -> Taken -> Missed -> Due
-        const nextStatus: Record<DoseStatus, DoseStatus> = {
-            'due': 'taken',
-            'taken': 'missed',
-            'missed': 'due'
-        };
+    const handleDoseClick = (dose: MedicationDose) => {
+        if (dose.status === 'due' || dose.status === 'skipped') {
+            // Mark as taken
+            logDose({ medId: dose.medication.id, scheduleId: dose.schedule?.id, status: 'taken', plannedTime: dose.planned_time });
+        } else if (dose.status === 'taken') {
+            // Undo (Delete Log)
+            if (dose.log_id) {
+                deleteLog(dose.log_id);
+            }
+        } else if (dose.status === 'missed') {
+            // Undo missed
+            if (dose.log_id) {
+                deleteLog(dose.log_id);
+            }
+        }
+    };
 
-        setDoses(prev => prev.map(d => {
-            if (d.id !== id) return d;
-            const newStatus = nextStatus[currentStatus];
-            return {
-                ...d,
-                status: newStatus,
-                takenAt: newStatus === 'taken' ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined
-            };
-        }));
+    const handleMarkMissed = (e: React.MouseEvent, dose: MedicationDose) => {
+        e.stopPropagation();
+        // Force mark as missed
+        logDose({ medId: dose.medication.id, scheduleId: dose.schedule?.id, status: 'missed', plannedTime: dose.planned_time });
     };
 
     return (
@@ -114,7 +99,7 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride }: Di
                         </span>
                         {!isExpanded && (
                             <span className="text-[11px] text-[#6B6B6B]">
-                                {takenCount}/{totalDoses} taken • {dueCount} due
+                                {stats.taken}/{stats.total} taken • {stats.due} due
                             </span>
                         )}
                     </div>
@@ -130,24 +115,43 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride }: Di
 
                     {/* Doses List (Scrollable) */}
                     <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                        {doses.length === 0 && (
+                            <div className="text-center py-8">
+                                <p className="text-[#6B6B6B] text-sm">No medications scheduled.</p>
+                            </div>
+                        )}
                         {doses.map(dose => (
                             <div
                                 key={dose.id}
-                                onClick={(e) => { e.stopPropagation(); toggleDoseStatus(dose.id, dose.status); }}
+                                onClick={(e) => { e.stopPropagation(); handleDoseClick(dose); }}
                                 className="flex items-center justify-between p-3 rounded-xl bg-[#1A1D21] border border-[#2A2A2A] hover:bg-[#202428] cursor-pointer transition-colors group"
                             >
                                 {/* Left: Info */}
                                 <div>
-                                    <div className="text-[14px] font-bold text-white">{dose.name} <span className="text-[#6B6B6B] font-normal text-xs ml-1">• {dose.time}</span></div>
-                                    <div className="text-[11px] text-[#8E8E93]">{dose.dosage} • {dose.instruction}</div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-[14px] font-bold text-white">{dose.medication.name}</div>
+                                        {dose.medication.brand && <span className="text-[10px] text-[#5C5C5E] border border-[#3C3C3E] rounded px-1">{dose.medication.brand}</span>}
+                                        <div className="text-[#6B6B6B] font-normal text-xs">• {dose.time_display}</div>
+                                    </div>
+                                    <div className="text-[11px] text-[#8E8E93]">
+                                        {dose.medication.strength_value} {dose.medication.strength_unit}
+                                        {dose.schedule?.anchor && dose.schedule.anchor !== 'None' && ` • ${dose.schedule.anchor}`}
+                                    </div>
                                 </div>
 
                                 {/* Right: Status Chip */}
-                                <div className="flex flex-col items-end gap-1">
-                                    <StatusButton status={dose.status} />
-                                    {dose.status === 'taken' && dose.takenAt && (
-                                        <span className="text-[9px] text-[#6B6B6B]">at {dose.takenAt}</span>
+                                <div className="flex items-center gap-2">
+                                    {dose.status === 'due' && (
+                                        <button
+                                            onClick={(e) => handleMarkMissed(e, dose)}
+                                            className="opacity-0 group-hover:opacity-100 px-2 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded text-[9px] font-bold uppercase transition-all"
+                                        >
+                                            Miss
+                                        </button>
                                     )}
+                                    <div className="flex flex-col items-end gap-1">
+                                        <StatusButton status={dose.status} isPrn={dose.is_prn} />
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -157,12 +161,18 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride }: Di
                     <div className="mt-4 pt-4 border-t border-[#262626] flex items-center justify-between flex-shrink-0">
                         <div className="flex flex-col">
                             <span className="text-[11px] text-[#6B6B6B] font-medium">{getNextDoseText()}</span>
-                            <button className="text-[11px] text-[#3B82F6] hover:text-[#60A5FA] font-bold text-left mt-1">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate('/medications');
+                                }}
+                                className="text-[11px] text-[#3B82F6] hover:text-[#60A5FA] font-bold text-left mt-1"
+                            >
                                 Manage schedule
                             </button>
                         </div>
                         <div className="text-[11px] text-[#6B6B6B] font-bold">
-                            {takenCount} / {totalDoses} taken
+                            {stats.taken} / {stats.total} taken
                         </div>
                     </div>
                 </div>
@@ -171,12 +181,12 @@ export function DiaryMedicationCard({ date, forceExpanded, onClickOverride }: Di
     );
 }
 
-function StatusButton({ status }: { status: DoseStatus }) {
+function StatusButton({ status, isPrn }: { status: MedicationDoseStatus, isPrn?: boolean }) {
     switch (status) {
         case 'taken':
             return (
                 <span className="px-2.5 py-1 rounded-md bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 text-[10px] font-bold uppercase tracking-wider">
-                    Taken
+                    {isPrn ? 'Taken (PRN)' : 'Taken'}
                 </span>
             );
         case 'missed':
@@ -185,9 +195,15 @@ function StatusButton({ status }: { status: DoseStatus }) {
                     Missed
                 </span>
             );
+        case 'skipped':
+            return (
+                <span className="px-2.5 py-1 rounded-md bg-gray-500/10 text-gray-500 border border-gray-500/20 text-[10px] font-bold uppercase tracking-wider">
+                    Skipped
+                </span>
+            );
         default:
             return (
-                <span className="px-2.5 py-1 rounded-md bg-[#2A2A2A] text-[#8E8E93] border border-[#333] text-[10px] font-bold uppercase tracking-wider group-hover:bg-[#333] transition-colors">
+                <span className={`px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider transition-colors bg-[#2A2A2A] text-[#8E8E93] border-[#333] group-hover:bg-[#333]`}>
                     Due
                 </span>
             );

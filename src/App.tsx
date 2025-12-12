@@ -11,6 +11,9 @@ import { Login } from './pages/Login';
 import { CreateFood } from './pages/CreateFood';
 import { WorkoutSession } from './pages/WorkoutSession';
 import { CreateRecipe } from './pages/CreateRecipe';
+// import { CreateMealPage } from './pages/CreateMealPage';
+// import { FoodDatabasePage } from './pages/FoodDatabasePage';
+import { MedicationManagerPage } from './pages/MedicationManagerPage';
 import { useAuthStore } from './stores/authStore';
 
 // Create a client
@@ -67,6 +70,9 @@ function App() {
             {/* <Route path="/log-water" element={<LogWater />} /> Removed from here */}
             <Route path="/create-food" element={<CreateFood />} />
             <Route path="/create-recipe" element={<CreateRecipe />} />
+            {/* <Route path="/create-meal" element={<CreateMealPage />} /> */}
+            {/* <Route path="/food-database" element={<FoodDatabasePage />} /> */}
+            <Route path="/medications" element={<MedicationManagerPage />} />
           </Route>
 
           {/* Catch-all 404 */}

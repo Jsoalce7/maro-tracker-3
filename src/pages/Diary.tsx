@@ -42,6 +42,7 @@ export function Diary() {
     // New Modal States
     const [showStartWorkout, setShowStartWorkout] = useState(false);
     const [showWorkoutManager, setShowWorkoutManager] = useState(false);
+    //    const [showMedicationManager, setShowMedicationManager] = useState(false);
 
     // Fetch profile targets
     const { targets } = useProfile();
@@ -254,7 +255,7 @@ export function Diary() {
                         onClickOverride={() => setActiveDetail('meals')}
                     />
                     <DiaryWorkoutCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('workout')} />
-                    <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} />
+                    <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} onManage={() => navigate('/medications')} />
                     <DiaryVitalsCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('vitals')} />
                 </div>
 
@@ -275,7 +276,7 @@ export function Diary() {
                             onClickOverride={() => setActiveDetail('meals')}
                         />
                         <DiaryWorkoutCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('workout')} />
-                        <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} />
+                        <DiaryMedicationCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('medication')} onManage={() => navigate('/medications')} />
                         <DiaryVitalsCard date={selectedDate} forceExpanded={false} onClickOverride={() => setActiveDetail('vitals')} />
                     </div>
                 </div>
@@ -295,7 +296,7 @@ export function Diary() {
                             onDeleteEntry={handleDeleteEntry} onEditEntry={handleEditEntry}
                         // Default behavior (internal state)
                         />
-                        <DiaryMedicationCard date={selectedDate} />
+                        <DiaryMedicationCard date={selectedDate} onManage={() => navigate('/medications')} />
                     </div>
                     {/* Col 3: Workout + Vitals */}
                     <div className="space-y-6">
@@ -320,6 +321,10 @@ export function Diary() {
                     onManageWorkouts={() => {
                         setShowMealSelector(false);
                         setShowWorkoutManager(true);
+                    }}
+                    onManageMedications={() => {
+                        setShowMealSelector(false);
+                        navigate('/medications');
                     }}
                 />
             )}
@@ -361,6 +366,11 @@ export function Diary() {
                 <WorkoutManager onClose={() => setShowWorkoutManager(false)} />
             )}
 
+            {/* Medication Manager (Commented out old modal) */}
+            {/* {showMedicationManager && (
+                <MedicationManager onClose={() => setShowMedicationManager(false)} />
+            )} */}
+
 
             {/* Detail Modal for Mobile/Tablet */}
             {activeDetail && (
@@ -374,7 +384,7 @@ export function Diary() {
                         />
                     )}
                     {activeDetail === 'workout' && <DiaryWorkoutCard date={selectedDate} forceExpanded={true} />}
-                    {activeDetail === 'medication' && <DiaryMedicationCard date={selectedDate} forceExpanded={true} />}
+                    {activeDetail === 'medication' && <DiaryMedicationCard date={selectedDate} forceExpanded={true} onManage={() => { setActiveDetail(null); navigate('/medications'); }} />}
                     {activeDetail === 'vitals' && <DiaryVitalsCard date={selectedDate} forceExpanded={true} />}
                 </CardDetailModal>
             )}

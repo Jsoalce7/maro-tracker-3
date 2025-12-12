@@ -6,9 +6,10 @@ interface GlobalActionModalProps {
     onClose: () => void;
     onStartWorkout: () => void;
     onManageWorkouts: () => void;
+    onManageMedications: () => void;
 }
 
-export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts }: GlobalActionModalProps) {
+export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts, onManageMedications }: GlobalActionModalProps) {
     const navigate = useNavigate();
     const [mode, setMode] = useState<'log' | 'manage'>('log');
 
@@ -25,6 +26,7 @@ export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts }:
             // Placeholders for now
             case 'manage_food': navigate('/add-food?mode=manage'); break;
             case 'manage_workouts': onManageWorkouts(); break;
+            case 'manage_medications': onManageMedications(); break;
             default: break;
         }
     };
@@ -75,14 +77,14 @@ export function GlobalActionModal({ onClose, onStartWorkout, onManageWorkouts }:
 
                             <ActionItem icon="💧" title="Water" subtitle="Log hydration" onClick={() => handleAction('log_water')} color="text-blue-400" />
                             <ActionItem icon="💪" title="Workout" subtitle="Log a session" onClick={() => handleAction('log_workout')} color="text-amber-500" />
-                            <ActionItem icon="💊" title="Medication" subtitle="Log meds" isStub />
+                            <ActionItem icon="💊" title="Medication" subtitle="Log meds" onClick={() => handleAction('manage_medications')} />
                             <ActionItem icon="❤️" title="Vitals" subtitle="Log health stats" isStub />
                         </>
                     ) : (
                         <>
                             <ActionItem icon="🥗" title="Meals & Foods" subtitle="Edit custom foods/meals" onClick={() => handleAction('manage_food')} />
                             <ActionItem icon="🏋️‍♂️" title="Workouts" subtitle="Edit templates" onClick={() => handleAction('manage_workouts')} />
-                            <ActionItem icon="💊" title="Medications" subtitle="Manage schedule" isStub />
+                            <ActionItem icon="💊" title="Medications" subtitle="Manage schedule" onClick={() => handleAction('manage_medications')} />
                             <ActionItem icon="❤️" title="Vitals" subtitle="Configure tracking" isStub />
                         </>
                     )}

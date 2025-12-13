@@ -42,6 +42,8 @@ export function MedicationManagerPage() {
     // Schedule Management UI
     const [isScheduleEditorOpen, setIsScheduleEditorOpen] = useState(false);
     const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+    const [isMobileScheduleSheetOpen, setIsMobileScheduleSheetOpen] = useState(false);
+
 
     const startCreateSchedule = () => {
         setEditingScheduleId(null);
@@ -171,8 +173,8 @@ export function MedicationManagerPage() {
     return (
         <div className="min-h-screen bg-black text-white flex flex-col md:flex-row ios-pwa-layout-fix">
 
-            {/* LEFT SIDEBAR */}
-            <div className="w-full md:w-64 bg-[#1C1C1E] border-r border-[#2C2C2E] flex flex-col h-auto md:h-screen sticky top-0 md:relative z-10">
+            {/* LEFT SIDEBAR (Desktop Only) */}
+            <div className="hidden md:flex w-64 bg-[#1C1C1E] border-r border-[#2C2C2E] flex-col h-screen sticky top-0 z-10">
                 <div className="p-4 border-b border-[#2C2C2E] flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#2C2C2E] rounded-full text-[#8E8E93]">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -244,9 +246,68 @@ export function MedicationManagerPage() {
                                     </div>
                                 </div>
                             ))}
-                            {/* Unassigned removed */}
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* MOBILE HEADER (Mobile Only) */}
+            <div className="md:hidden bg-[#1C1C1E] border-b border-[#2C2C2E] sticky top-0 z-50 flex flex-col animate-in slide-in-from-top-2 duration-200">
+                {/* Row 1: Nav & Segmented Control */}
+                <div className="p-4 pb-2 space-y-3">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#2C2C2E] rounded-full text-[#8E8E93]">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <h1 className="text-lg font-bold">Medications</h1>
+                    </div>
+                    <div className="flex bg-[#2C2C2E] p-1 rounded-xl">
+                        <button
+                            onClick={() => setFilterMode('category')}
+                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${filterMode === 'category' ? 'bg-[#0A84FF] text-white shadow-lg' : 'text-[#8E8E93]'}`}
+                        >
+                            Categories
+                        </button>
+                        <button
+                            onClick={() => setFilterMode('schedule')}
+                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${filterMode === 'schedule' ? 'bg-[#0A84FF] text-white shadow-lg' : 'text-[#8E8E93]'}`}
+                        >
+                            Schedules
+                        </button>
+                    </div>
+                </div>
+
+                {/* Row 2: Secondary Nav (Horizontal Chips or Sheet Trigger) */}
+                <div className="px-4 pb-3">
+                    {filterMode === 'category' ? (
+                        <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1 no-scrollbar-mobile">
+                            {['All', 'Prescription', 'Supplement', 'Vitamin', 'Painkiller', 'Antibiotic', 'OTC'].map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setCategoryFilter(cat)}
+                                    className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-all ${categoryFilter === cat
+                                        ? 'bg-[#0A84FF] border-[#0A84FF] text-white'
+                                        : 'bg-[#1C1C1E] border-[#333] text-[#8E8E93] hover:border-[#666]'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setIsMobileScheduleSheetOpen(true)}
+                            className="w-full bg-[#2C2C2E] hover:bg-[#333] py-2.5 px-4 rounded-xl text-sm font-medium text-white flex justify-between items-center transition-colors"
+                        >
+                            <span className="flex items-center gap-2">
+                                <span className="text-[#8E8E93]">Showing:</span>
+                                {scheduleFilter === 'Scheduled' ? 'All Scheduled' :
+                                    scheduleFilter === 'Daily' ? 'Take Daily' :
+                                        customSchedules.find((s: any) => s.id === scheduleFilter)?.name || 'Select Schedule'}
+                            </span>
+                            <svg className="w-4 h-4 text-[#8E8E93]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -533,6 +594,7 @@ export function MedicationManagerPage() {
             {/* Add to Daily Modal */}
             {isAddToDailyOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    {/* ... existing modal ... */}
                     <div className="bg-[#1C1C1E] w-full max-w-sm rounded-2xl overflow-hidden border border-[#2C2C2E] flex flex-col max-h-[80vh]">
                         <div className="p-4 border-b border-[#2C2C2E] flex justify-between items-center bg-[#131518]">
                             <h3 className="font-bold text-white">Add to Take Daily</h3>
@@ -557,6 +619,66 @@ export function MedicationManagerPage() {
                                     <p>All medications are already in Daily List.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MOBILE SCHEDULE SHEET (Mobile Only) */}
+            {isMobileScheduleSheetOpen && (
+                <div className="fixed inset-0 z-[60] flex items-end justify-center md:hidden animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileScheduleSheetOpen(false)} />
+
+                    <div className="relative z-10 bg-[#1C1C1E] w-full max-h-[80vh] rounded-t-3xl border-t border-[#333] flex flex-col animate-in slide-in-from-bottom-full duration-300">
+                        {/* Handle */}
+                        <div className="flex justify-center pt-3 pb-1">
+                            <div className="w-12 h-1.5 bg-[#333] rounded-full" />
+                        </div>
+
+                        <div className="p-5 overflow-y-auto custom-scrollbar">
+                            <h3 className="text-lg font-bold text-white mb-4 px-1">Select Schedule</h3>
+
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => { setScheduleFilter('Scheduled'); setIsMobileScheduleSheetOpen(false); }}
+                                    className={`w-full text-left px-5 py-4 rounded-xl font-bold flex items-center justify-between ${scheduleFilter === 'Scheduled' ? 'bg-[#0A84FF] text-white' : 'bg-[#262626] text-[#BBB]'}`}
+                                >
+                                    <span>All Scheduled</span>
+                                    {scheduleFilter === 'Scheduled' && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                                </button>
+
+                                <button
+                                    onClick={() => { setScheduleFilter('Daily'); setIsMobileScheduleSheetOpen(false); }}
+                                    className={`w-full text-left px-5 py-4 rounded-xl font-bold flex items-center justify-between ${scheduleFilter === 'Daily' ? 'bg-[#0A84FF] text-white' : 'bg-[#262626] text-[#BBB]'}`}
+                                >
+                                    <span>Take Daily</span>
+                                    {scheduleFilter === 'Daily' && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                                </button>
+
+                                <div className="h-px bg-[#333] my-2" />
+                                <p className="text-xs text-[#666] uppercase font-bold px-2 mb-2">My Plans</p>
+
+                                {customSchedules?.map((sche: any) => (
+                                    <button
+                                        key={sche.id}
+                                        onClick={() => { setScheduleFilter(sche.id); setIsMobileScheduleSheetOpen(false); }}
+                                        className={`w-full text-left px-5 py-4 rounded-xl font-bold flex items-center justify-between ${scheduleFilter === sche.id ? 'bg-[#0A84FF] text-white' : 'bg-[#262626] text-[#BBB]'}`}
+                                    >
+                                        <div className="flex flex-col">
+                                            <span>{sche.name}</span>
+                                            <span className={`text-xs font-normal opacity-70`}>{sche.time}</span>
+                                        </div>
+                                        {scheduleFilter === sche.id && <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => { setIsMobileScheduleSheetOpen(false); startCreateSchedule(); }}
+                                className="w-full mt-6 py-4 border border-dashed border-[#444] rounded-xl text-[#0A84FF] font-bold hover:bg-[#0A84FF]/10 transition-colors"
+                            >
+                                + Create New Schedule
+                            </button>
                         </div>
                     </div>
                 </div>

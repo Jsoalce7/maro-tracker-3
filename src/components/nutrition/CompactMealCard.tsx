@@ -68,16 +68,20 @@ export function CompactMealCard({
                     className="bg-[#141414] border border-[#222] rounded-[24px] p-5 cursor-pointer hover:border-[#333] active:scale-[0.99] transition-all duration-200 relative overflow-visible flex flex-col justify-between h-[140px] w-full shadow-sm"
                 >
                     {/* Header: Title & Count & Kcal */}
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 sm:gap-0">
                         <div className="flex items-center gap-2.5">
                             <h3 className="text-[17px] font-semibold text-white tracking-tight leading-none capitalize">{mealLabels[type]}</h3>
+                        </div>
+
+                        {/* Meta Row: Moved below title on mobile, right-aligned on desktop */}
+                        <div className="flex items-center gap-3 self-start sm:self-auto">
                             <div className={`px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wide uppercase ${entries.length > 0 ? 'bg-[#2A2A2A] text-[#A1A1A1]' : 'bg-[#1A1A1A] text-[#444]'}`}>
                                 {entries.length} {entries.length === 1 ? 'Item' : 'Items'}
                             </div>
-                        </div>
-                        {/* Big Kcal Display */}
-                        <div className="text-[20px] font-bold text-white tracking-tight leading-none mr-8">
-                            {Math.round(totalCalories)}
+                            {/* Big Kcal Display */}
+                            <div className="text-[20px] font-bold text-white tracking-tight leading-none sm:mr-8">
+                                {Math.round(totalCalories)}
+                            </div>
                         </div>
                     </div>
 

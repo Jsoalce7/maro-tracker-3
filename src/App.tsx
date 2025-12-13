@@ -69,6 +69,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/diary" element={<Diary />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/medications" element={<MedicationManagerPage />} />
             {/* <Route path="/log-water" element={<LogWater />} /> Moved to Full Screen Layout */}
           </Route>
 
@@ -81,7 +82,6 @@ function App() {
             <Route path="/create-recipe" element={<CreateRecipe />} />
             {/* <Route path="/create-meal" element={<CreateMealPage />} /> */}
             {/* <Route path="/food-database" element={<FoodDatabasePage />} /> */}
-            <Route path="/medications" element={<MedicationManagerPage />} />
           </Route>
 
           {/* Catch-all 404 */}

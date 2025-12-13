@@ -51,10 +51,19 @@ export interface FoodItem {
     fat_per_100g: number;
     // Micros (Optional)
     sugar_per_100g?: number;
+    filled_sugar_per_100g?: number; // Internal placeholder? No.
     fiber_per_100g?: number;
     saturated_fat_per_100g?: number;
-    sodium_per_100g?: number; // mg
-    caffeine_mg?: number;     // mg (per 100g/ml usually, or absolute per serving if unit is handled)
+    trans_fat_per_100g?: number;     // New
+    added_sugar_per_100g?: number;   // New
+    cholesterol_per_100g?: number;   // New (mg)
+    sodium_per_100g?: number;        // mg
+    potassium_per_100g?: number;     // New (mg)
+    calcium_per_100g?: number;       // New (mg)
+    iron_per_100g?: number;          // New (mg)
+    vitamin_d_per_100g?: number;     // New (mcg)
+    caffeine_mg?: number;            // mg
+    sugar_alcohols_per_100g?: number; // New for Net Carbs
 
     serving_size_g: number;
     serving_unit?: string; // e.g. "slice", "cup", "oz"
@@ -85,6 +94,11 @@ export interface FoodEntry {
     protein: number;
     carbs: number;
     fat: number;
+
+    // Snapshot Fields for Net Carbs
+    fiber_g?: number;
+    sugar_alcohols_g?: number;
+    net_carbs_g?: number;
 
     // Log time
     logged_at?: string; // ISO string

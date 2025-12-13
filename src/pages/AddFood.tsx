@@ -146,6 +146,19 @@ export function AddFood() {
         setServingUnit('serving');
     };
 
+    // Helper to format nutrient values:
+    // Grams: 0-1 decimals (e.g. 10, 10.5)
+    // mg: 0 decimals (integer)
+    const formatNutrient = (val: number, unit: 'g' | 'mg' = 'g') => {
+        if (unit === 'mg') return Math.round(val).toString();
+        // For grams, show 1 decimal if needed, but remove .0
+        return parseFloat(val.toFixed(1)).toString();
+    };
+
+    const formatQuantity = (q: number) => {
+        return parseFloat(q.toFixed(1)).toString();
+    }
+
     const handleBack = () => {
         if (selectedFood) {
             setSelectedFood(null);
@@ -254,6 +267,9 @@ export function AddFood() {
             quantityInGrams = quantity * (food.serving_size_g || 100);
         } else if (unit === 'oz') {
             quantityInGrams = quantity * 28.3495;
+        } else if (unit === 'fl oz') {
+            // Fluid Ounce: 1 fl oz = 29.5735 ml. Assuming 1ml = 1g density for macros.
+            quantityInGrams = quantity * 29.5735;
         } else if (unit === 'ml') {
             quantityInGrams = quantity;
         }
@@ -267,6 +283,15 @@ export function AddFood() {
         };
         const caffeine_mg = (food.caffeine_mg || 0) * ratio;
 
+        // Calculate Net Carb Snapshot Fields
+        // Fiber & Sugar Alcohols might be undefined (treat as 0)
+        const fiber_g = (food.fiber_per_100g || 0) * ratio;
+        const sugar_alcohols_g = (food.sugar_alcohols_per_100g || 0) * ratio;
+
+        // Net Carbs = Total Carbs - Fiber - Sugar Alcohols
+        // Ensure strictly non-negative
+        const net_carbs_g = Math.max(0, nutrition.carbs - fiber_g - sugar_alcohols_g);
+
         // Determine Water Content (Only if explicitly Water)
         let water_ml = 0;
         if (food.category === 'Drink') {
@@ -279,7 +304,8 @@ export function AddFood() {
             if (isWater) {
                 // Convert quantity to ml
                 if (unit === 'ml') water_ml = quantity;
-                else if (unit === 'oz') water_ml = quantity * 29.5735;
+                else if (unit === 'fl oz') water_ml = quantity * 29.5735;
+                else if (unit === 'oz') water_ml = quantity * 29.5735; // Usually oz input for water implies fl oz.
                 else water_ml = quantity; // gram approx ml
             }
         }
@@ -293,8 +319,12 @@ export function AddFood() {
             nutrition,
             caffeine_mg,
             water_ml: water_ml,
+
             metric_quantity: quantity,
-            metric_unit: unit
+            metric_unit: unit,
+            fiber_g,
+            sugar_alcohols_g,
+            net_carbs_g
         });
     };
 
@@ -825,6 +855,7 @@ export function AddFood() {
                                 <option value="g">grams (g)</option>
                                 {(selectedFood.category === 'Drink' || ['oz', 'ml', 'tsp', 'tbsp'].includes(selectedFood.serving_unit || '')) && (
                                     <>
+                                        <option value="fl oz">fl oz</option>
                                         <option value="oz">oz</option>
                                         <option value="ml">ml</option>
                                         {['tsp', 'tbsp'].includes(selectedFood.serving_unit || '') && (
@@ -838,7 +869,7 @@ export function AddFood() {
                             </select>
                         </div>
                         <div className="px-4 py-3 text-[#6B6B6B] text-sm font-medium flex items-center bg-[#141414] min-w-[80px] justify-center">
-                            = {formatQuantity(parseFloat(quantity || '0') * (servingUnit === 'serving' ? (selectedFood.serving_size_g || 100) : (servingUnit === 'oz' ? 28.35 : servingUnit === 'tsp' ? 4.93 : servingUnit === 'tbsp' ? 14.79 : 1)))} {selectedFood.category === 'Drink' ? 'ml' : 'g'}
+                            = {formatQuantity(parseFloat(quantity || '0') * (servingUnit === 'serving' ? (selectedFood.serving_size_g || 100) : (servingUnit === 'fl oz' ? 29.57 : servingUnit === 'oz' ? 28.35 : servingUnit === 'tsp' ? 4.93 : servingUnit === 'tbsp' ? 14.79 : 1)))} {['Drink', 'Liquid'].includes(selectedFood.category || '') || servingUnit === 'fl oz' || servingUnit === 'ml' ? 'ml' : 'g'}
                         </div>
                     </div>
 
@@ -886,6 +917,8 @@ export function AddFood() {
                                 quantityInGrams = qty * (item.food.serving_size_g || 100);
                             } else if (item.unit === 'oz') {
                                 quantityInGrams = qty * 28.3495;
+                            } else if (item.unit === 'fl oz') {
+                                quantityInGrams = qty * 29.5735;
                             } else if (item.unit === 'ml') {
                                 quantityInGrams = qty;
                             }
@@ -947,6 +980,7 @@ export function AddFood() {
                                                     <option value="g">grams (g)</option>
                                                     {isDrink && (
                                                         <>
+                                                            <option value="fl oz">fl oz</option>
                                                             <option value="oz">oz</option>
                                                             <option value="ml">ml</option>
                                                         </>

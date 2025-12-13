@@ -153,7 +153,10 @@ export function useNutrition(date: string) {
             water_ml,
             metric_quantity,
             metric_unit,
-            logged_at
+            logged_at,
+            fiber_g,
+            sugar_alcohols_g,
+            net_carbs_g
         }: {
             mealId: string,
             foodId?: string,
@@ -165,9 +168,13 @@ export function useNutrition(date: string) {
             water_ml?: number,
             metric_quantity?: number,
             metric_unit?: string,
-            logged_at?: string
+            logged_at?: string,
+            // Net Carb Snapshot Fields
+            fiber_g?: number,
+            sugar_alcohols_g?: number,
+            net_carbs_g?: number
         }) => {
-            console.log("Adding Entry:", { mealId, foodId, quantity, caffeine_mg });
+            console.log("Adding Entry:", { mealId, foodId, quantity, caffeine_mg, net_carbs_g });
             const { data, error } = await supabase
                 .from('food_entries')
                 .insert({
@@ -181,7 +188,10 @@ export function useNutrition(date: string) {
                     water_ml,
                     metric_quantity,
                     metric_unit,
-                    logged_at: logged_at || new Date().toISOString()
+                    logged_at: logged_at || new Date().toISOString(),
+                    fiber_g,
+                    sugar_alcohols_g,
+                    net_carbs_g
                 })
                 .select()
                 .single();
@@ -225,13 +235,29 @@ export function useNutrition(date: string) {
 
     // Update Entry
     const updateEntryMutation = useMutation({
-        mutationFn: async ({ entryId, quantity, nutrition, logged_at, metric_quantity, metric_unit }: {
+        mutationFn: async ({
+            entryId,
+            quantity,
+            nutrition,
+            logged_at,
+            metric_quantity,
+            metric_unit,
+            fiber_g,
+            sugar_alcohols_g,
+            net_carbs_g
+        }: {
             entryId: string,
             quantity: number,
             nutrition: { calories: number; protein: number; carbs: number; fat: number },
             logged_at?: string,
             metric_quantity?: number,
-            metric_unit?: string
+            metric_unit?: string,
+            // Check if we need to update snapshots on edit?
+            // Usually editing quantity implies recalc. For now, UI might not pass these yet.
+            // If we want FULL support, we should accept them here too.
+            fiber_g?: number,
+            sugar_alcohols_g?: number,
+            net_carbs_g?: number
         }) => {
             const updates: any = {
                 quantity_g: quantity,
@@ -240,6 +266,9 @@ export function useNutrition(date: string) {
             if (logged_at) updates.logged_at = logged_at;
             if (metric_quantity !== undefined) updates.metric_quantity = metric_quantity;
             if (metric_unit !== undefined) updates.metric_unit = metric_unit;
+            if (fiber_g !== undefined) updates.fiber_g = fiber_g;
+            if (sugar_alcohols_g !== undefined) updates.sugar_alcohols_g = sugar_alcohols_g;
+            if (net_carbs_g !== undefined) updates.net_carbs_g = net_carbs_g;
 
             const { error } = await supabase
                 .from('food_entries')

@@ -7,20 +7,28 @@ interface DailyNutritionCardProps {
     calories: { consumed: number; target: number };
     protein: { consumed: number; target: number };
     fat: { consumed: number; target: number };
-    carbs: { consumed: number; target: number };
+    carbs: { consumed: number; netConsumed?: number; target: number }; // Added netConsumed
     water?: number;
     caffeine?: number;
 }
 
 // Helper for Linear Progress Bar
-const LinearProgressBar = ({ label, value, target, colorClass, bgClass, unit = 'g' }: { label: string, value: number, target: number, colorClass: string, bgClass: string, unit?: string }) => {
+const LinearProgressBar = ({ label, value, target, colorClass, bgClass, unit = 'g', ...rest }: { label: string, value: number, target: number, colorClass: string, bgClass: string, unit?: string }) => {
     const safeTarget = target || 1; // avoid divide by zero
     const pct = Math.min(Math.max((value / safeTarget) * 100, 0), 100);
 
     return (
         <div className="flex flex-col gap-1.5 w-full">
             <div className="flex items-center justify-between text-[13px]">
-                <span className="font-semibold text-white tracking-tight">{label}</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white tracking-tight">{label}</span>
+                    {/* Optional extra label (e.g. Net Carbs) */}
+                    {(rest as any).netValue !== undefined && (
+                        <span className="text-[10px] text-[#888] font-medium">
+                            (Net {Math.round((rest as any).netValue)}g)
+                        </span>
+                    )}
+                </div>
                 <div className="flex items-center gap-1">
                     <span className="font-bold text-white">{Math.round(value)}</span>
                     <span className="text-[#666] font-medium">/ {Math.round(target)}{unit}</span>
@@ -89,6 +97,7 @@ export function DailyNutritionCard({
                     target={carbs.target}
                     colorClass="bg-[#4CD964]"
                     bgClass="bg-[#102915]"
+                    {...({ netValue: carbs.netConsumed } as any)}
                 />
                 <LinearProgressBar
                     label="Fat"

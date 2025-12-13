@@ -145,8 +145,8 @@ export function WorkoutManager({ onClose }: WorkoutManagerProps) {
     return (
         <div className="fixed inset-0 z-[70] bg-[#050505] flex flex-col md:flex-row animate-in slide-in-from-bottom-10 duration-200">
 
-            {/* LEFT SIDEBAR */}
-            <div className="w-full md:w-64 bg-[#1C1C1E] border-r border-[#2C2C2E] flex flex-col h-auto md:h-screen sticky top-0 md:relative z-10">
+            {/* LEFT SIDEBAR (Desktop Only) */}
+            <div className="hidden md:flex w-64 bg-[#1C1C1E] border-r border-[#2C2C2E] flex-col h-screen sticky top-0 z-10">
                 <div className="p-4 border-b border-[#2C2C2E] flex items-center gap-3 safe-top">
                     <button onClick={onClose} className="p-2 hover:bg-[#2C2C2E] rounded-full text-[#8E8E93]">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -180,6 +180,32 @@ export function WorkoutManager({ onClose }: WorkoutManagerProps) {
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* MOBILE HEADER (Mobile Only) */}
+            <div className="md:hidden bg-[#1C1C1E] border-b border-[#2C2C2E] p-4 pb-3 sticky top-0 z-50 animate-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-3 mb-4">
+                    <button onClick={onClose} className="p-2 hover:bg-[#2C2C2E] rounded-full text-[#8E8E93]">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                    <h1 className="text-lg font-bold text-white">Workouts</h1>
+                </div>
+
+                {/* Mobile Segmented Control */}
+                <div className="flex bg-[#2C2C2E] p-1 rounded-xl">
+                    <button
+                        onClick={() => { setFilterMode('template'); setView('list'); }}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${filterMode === 'template' ? 'bg-[#0A84FF] text-white shadow-lg' : 'text-[#8E8E93]'}`}
+                    >
+                        Workouts
+                    </button>
+                    <button
+                        onClick={() => { setFilterMode('schedule'); setView('list'); }}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${filterMode === 'schedule' ? 'bg-[#0A84FF] text-white shadow-lg' : 'text-[#8E8E93]'}`}
+                    >
+                        Schedules
+                    </button>
                 </div>
             </div>
 

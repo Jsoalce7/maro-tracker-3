@@ -12,9 +12,12 @@ import { useWater } from '../hooks/useWater';
 import { MealType, FoodEntry, FoodItem } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { getTodayLocal, formatDateDisplay } from '../utils/date';
+import { useAuthStore } from '../stores/authStore';
+import { useQuery } from '@tanstack/react-query';
 
 export function Home() {
     const navigate = useNavigate();
+    const { session } = useAuthStore();
 
     const mealLabels: Record<MealType, string> = {
         breakfast: 'Breakfast',
@@ -23,9 +26,7 @@ export function Home() {
         snacks: 'Snacks',
     };
 
-    // Added state for meal selector
-    const [showMealSelector, setShowMealSelector] = useState(false);
-
+    // Data Hooks
     // Data Hooks
     const { targets } = useProfile();
     const today = getTodayLocal();
@@ -34,8 +35,6 @@ export function Home() {
 
     // Open Add Food (Navigate)
     const handleOpenAddFood = (mealType: MealType) => {
-        // hideNavBar(); // Removed: Handled by Layout
-        // openAddFood(mealType); // Removed: Store state no longer needed
         navigate(`/add-food?mealType=${mealType}&date=${today}`);
     };
 
@@ -77,6 +76,7 @@ export function Home() {
             protein: Math.round(allEntries.reduce((sum, e) => sum + e.protein, 0)),
             carbs: Math.round(allEntries.reduce((sum, e) => sum + e.carbs, 0)),
             fat: Math.round(allEntries.reduce((sum, e) => sum + e.fat, 0)),
+            netCarbs: Math.round(allEntries.reduce((sum, e) => sum + (e.net_carbs_g ?? e.carbs), 0)),
             caffeine: Math.round(allEntries.reduce((sum, e) => sum + (e.caffeine_mg || 0), 0)),
             water: Math.round(totalWaterMl + allEntries.reduce((sum, e) => sum + (e.water_ml || 0), 0)),
         };
@@ -105,7 +105,10 @@ export function Home() {
         nutrition: { calories: number; protein: number; carbs: number; fat: number },
         logged_at?: string,
         metric_quantity?: number,
-        metric_unit?: string
+        metric_unit?: string,
+        fiber_g?: number,
+        sugar_alcohols_g?: number,
+        net_carbs_g?: number
     ) => {
         const [firstId, ...restIds] = entryIds;
         updateEntry({
@@ -113,7 +116,10 @@ export function Home() {
             quantity: quantity, // This is quantity_g passed from EditEntryModal
             nutrition,
             metric_quantity: metric_quantity,
-            metric_unit: metric_unit
+            metric_unit: metric_unit,
+            fiber_g,
+            sugar_alcohols_g,
+            net_carbs_g
         }, {
             onError: (err) => { console.error("Failed to update:", err); alert("Update failed."); },
             onSuccess: () => {
@@ -158,17 +164,6 @@ export function Home() {
                         {formatDateDisplay(today)}
                     </p>
                 </div>
-                <button
-                    onClick={() => {
-                        // hideNavBar(); // Removed
-                        setShowMealSelector(true);
-                    }}
-                    className="w-10 h-10 bg-[#3B82F6] rounded-full flex items-center justify-center text-white hover:bg-[#2563EB] transition-colors shadow-lg"
-                >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
             </header>
 
             {/* Main Content */}
@@ -183,7 +178,7 @@ export function Home() {
                             calories={{ consumed: totals.calories, target: currentTargets.calories_per_day }}
                             protein={{ consumed: totals.protein, target: currentTargets.protein_g }}
                             fat={{ consumed: totals.fat, target: currentTargets.fat_g }}
-                            carbs={{ consumed: totals.carbs, target: currentTargets.carbs_g }}
+                            carbs={{ consumed: totals.carbs, netConsumed: totals.netCarbs, target: currentTargets.carbs_g }}
                             water={totals.water}
                             caffeine={totals.caffeine}
                         />
@@ -192,20 +187,27 @@ export function Home() {
                         <section className="space-y-3">
                             <h2 className="text-lg font-semibold text-white">Meals</h2>
 
-                            {/* Meals Grid: 2x2 on all screens */}
-                            <div className="grid grid-cols-2 gap-3 md:gap-4">
-                                {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[]).map((mealType) => (
-                                    <CompactMealCard
-                                        key={mealType}
-                                        type={mealType}
-                                        entries={entries[mealType]}
-                                        totalCalories={getMealCalories(mealType)}
-                                        onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
-                                        onEditEntry={handleEditGroup}
-                                        onMoveEntry={handleMoveEntry}
-                                        onSaveAsMyMeal={(entries) => handleSaveAsMyMeal(entries, mealType)}
-                                    />
-                                ))}
+                            {/* Meals Grid: Single col on mobile, 2 cols on Tablet+ */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                                {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealType[])
+                                    .filter(type => entries[type].length > 0) // Hide empty meals
+                                    .map((mealType) => (
+                                        <CompactMealCard
+                                            key={mealType}
+                                            type={mealType}
+                                            entries={entries[mealType]}
+                                            totalCalories={getMealCalories(mealType)}
+                                            onDeleteEntry={(entryIds) => handleDeleteEntry(mealType, entryIds)}
+                                            onEditEntry={handleEditGroup}
+                                            onMoveEntry={handleMoveEntry}
+                                            onSaveAsMyMeal={(entries) => handleSaveAsMyMeal(entries, mealType)}
+                                        />
+                                    ))}
+                                {Object.values(entries).every(e => e.length === 0) && (
+                                    <div className="col-span-full py-8 text-center text-[#444] text-sm italic border border-dashed border-[#222] rounded-2xl">
+                                        No meals logged today
+                                    </div>
+                                )}
                             </div>
                         </section>
                     </div>
@@ -222,33 +224,7 @@ export function Home() {
                 </div>
             </div>
 
-            {/* Global Action Modal */}
-            {showMealSelector && (
-                <GlobalActionModal
-                    onClose={() => setShowMealSelector(false)}
-                    onStartWorkout={() => {
-                        setShowMealSelector(false);
-                        // Logic to start workout or navigate
-                        navigate('/workout/session/new'); // Placeholder, adjust if needed
-                    }}
-                    onManageWorkouts={() => {
-                        setShowMealSelector(false);
-                        navigate('/add-food?mode=manage'); // Placeholder based on old logic? No, wait.
-                        // The old modal had "Manage Food" -> /add-food?mode=manage.
-                        // GlobalActionModal has "Manage Workouts" -> /workout-manager (implied).
-                        // Let's wire it correctly.
-                        navigate('/workouts');
-                    }}
-                    onManageMedications={() => {
-                        setShowMealSelector(false);
-                        navigate('/medications');
-                    }}
-                />
-            )}
-
-            {/* Note: AddFoodModal, WaterModal etc REMOVED. */}
-
-            {/* Edit Entry Modal - Kept for now */}
+            {/* Edit Entry Modal - Kept local */}
             {editingEntries && (
                 <EditEntryModal
                     entries={editingEntries}

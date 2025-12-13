@@ -13,7 +13,10 @@ interface EditEntryModalProps {
         nutrition: { calories: number; protein: number; carbs: number; fat: number },
         logged_at?: string,
         metric_quantity?: number,
-        metric_unit?: string
+        metric_unit?: string,
+        fiber_g?: number,
+        sugar_alcohols_g?: number,
+        net_carbs_g?: number
     ) => void;
     onDelete?: (entryIds: string[]) => void;
     // New optional prop to jump to editing the food definition
@@ -171,6 +174,36 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
             };
         }
 
+        // Calculate Net Carb Snapshots
+        let fiber_g = 0;
+        let sugar_alcohols_g = 0;
+        let net_carbs_g = 0;
+
+        if (firstEntry.food) {
+            const food = firstEntry.food;
+            const ratio = currentGrams / 100;
+            fiber_g = (food.fiber_per_100g || 0) * ratio;
+            sugar_alcohols_g = (food.sugar_alcohols_per_100g || 0) * ratio;
+            // Net Carbs = Total Carbs - Fiber - Sugar Alcohols
+            net_carbs_g = Math.max(0, nutritionToSave.carbs - fiber_g - sugar_alcohols_g);
+        } else if (recipe && recipe.ingredients) {
+            const ratio = recipeTotalWeight > 0 ? (currentGrams / recipeTotalWeight) : 0;
+            const recipeSnapshots = recipe.ingredients.reduce((acc, ing) => {
+                const item = ing.food || ing.custom_food;
+                if (!item) return acc;
+                const q = ing.quantity; // amount in recipe
+                const ratioSub = q / 100;
+                return {
+                    fiber: acc.fiber + ((item.fiber_per_100g || 0) * ratioSub),
+                    sugar_alcohols: acc.sugar_alcohols + ((item.sugar_alcohols_per_100g || 0) * ratioSub)
+                };
+            }, { fiber: 0, sugar_alcohols: 0 });
+
+            fiber_g = recipeSnapshots.fiber * ratio;
+            sugar_alcohols_g = recipeSnapshots.sugar_alcohols * ratio;
+            net_carbs_g = Math.max(0, nutritionToSave.carbs - fiber_g - sugar_alcohols_g);
+        }
+
         const firstEntryItem = entries[0];
         let newLoggedAt = new Date().toISOString();
         if (firstEntryItem.logged_at) {
@@ -186,7 +219,10 @@ export function EditEntryModal({ entries, onClose, onUpdate, onDelete, onEditFoo
             nutritionToSave,
             newLoggedAt,
             parseFloat(quantity) || 0, // metric_quantity
-            unit // metric_unit
+            unit, // metric_unit
+            fiber_g,
+            sugar_alcohols_g,
+            net_carbs_g
         );
         onClose();
     };

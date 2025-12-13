@@ -9,9 +9,16 @@ interface ParsedNutritionData {
     carbs?: number;
     fat?: number;
     sugar?: number;
+    added_sugar?: number;
     fiber?: number;
     saturated_fat?: number;
+    trans_fat?: number;
+    cholesterol?: number;
     sodium?: number;
+    potassium?: number;
+    calcium?: number;
+    iron?: number;
+    vitamin_d?: number;
     ingredients?: string;
 }
 
@@ -45,22 +52,37 @@ export function useNutritionLabelOCR() {
                     messages: [
                         {
                             role: 'system',
-                            content: `You are a nutrition label parser. Extract nutrition facts from the image and return ONLY valid JSON with these fields (use null for missing values):
-{
-  "name": "product name if visible",
-  "brand": "brand name if visible", 
-  "serving_size_g": number in grams,
-  "calories": number,
-  "protein": number in grams,
-  "carbs": number in grams (total carbohydrates),
-  "fat": number in grams (total fat),
-  "sugar": number in grams,
-  "fiber": number in grams,
-  "saturated_fat": number in grams,
-  "sodium": number in milligrams,
-  "ingredients": "full ingredients list as text"
-}
-Return ONLY the JSON object, no markdown or explanation.`
+                            content: `You are a nutrition label parser optimized for US FDA labels. Extract nutrition facts and return ONLY valid JSON.
+Missing values MUST be null, do not infer them.
+
+Fields to extract:
+- "name": Product name (if visible)
+- "brand": Brand name (if visible)
+- "serving_size_g": Serving size in GRAMS (number).
+- "calories": Calorie count (number)
+- "protein": Protein in grams (number)
+- "carbs": Total Carbohydrate in grams (number). MATCH "Total Carbohydrate".
+- "fat": Total Fat in grams (number). MATCH "Total Fat".
+- "sugar": Total Sugars in grams (number). MATCH "Total Sugars".
+- "added_sugar": Added Sugars in grams (number). MATCH "Includes Xg Added Sugars".
+- "fiber": Dietary Fiber in grams (number). MATCH "Dietary Fiber".
+- "saturated_fat": Saturated Fat in grams (number).
+- "trans_fat": Trans Fat in grams (number).
+- "cholesterol": Cholesterol in milligrams (mg).
+- "sodium": Sodium in LEVEL MILLIGRAMS (mg).
+- "potassium": Potassium in milligrams (mg).
+- "calcium": Calcium in milligrams (mg).
+- "iron": Iron in milligrams (mg).
+- "vitamin_d": Vitamin D in micrograms (mcg).
+- "ingredients": Full ingredient text.
+
+IMPORTANT:
+- If "Dietary Fiber" is not explicitly written, set "fiber": null.
+- If "Total Sugars" is not explicitly written, set "sugar": null.
+- If "Includes Xg Added Sugars" is not explicitly written, set "added_sugar": null.
+- For Trans Fat, Cholesterol, and Micros (Vit D, Ca, Fe, K): If not found, set to null.
+- Do not guess. If the image is blurry or the value is cut off, return null.
+`
                         },
                         {
                             role: 'user',
